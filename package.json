@@ -1,0 +1,17 @@
+{
+  "name": "discord-bot-basico",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord-bot-basico": "file:",
+    "discord.js": "^14.19.3",
+    "dotenv": "^16.5.0"
+  }
+}
