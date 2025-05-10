@@ -40,7 +40,7 @@ client.on('messageCreate', async (message) => {
         args = raw.split(/ +/);
         commandName = args.shift().toLowerCase();
     } else {
-        return; // PREFIX is set but message doesn't start with it
+        return;
     }
 
     const command = client.commands.get(commandName);
