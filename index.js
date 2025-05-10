@@ -1,14 +1,21 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, Events } = require('discord.js');
 const http = require('http');
 
 const setup = require('./setup.json');
 const PREFIX = typeof setup.PREFIX === 'string' ? setup.PREFIX : '';
 
+// Require the button interaction handler
+const handleButtonInteraction = require('./handler/button_interaction'); // Path to your new handler
+
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+    ]
 });
 
 // Command loader
@@ -17,20 +24,25 @@ const cmdPath = path.join(__dirname, 'cmd');
 fs.readdirSync(cmdPath)
     .filter(file => file.endsWith('.js'))
     .forEach(file => {
-        const command = require(path.join(cmdPath, file));
-        if (command && command.name && typeof command.execute === 'function') {
-            client.commands.set(command.name, command);
+        try { // Added try-catch for command loading
+            const command = require(path.join(cmdPath, file));
+            if (command && command.name && typeof command.execute === 'function') {
+                client.commands.set(command.name, command);
+            } else {
+                console.warn(`[WARN] The command at ${path.join(cmdPath, file)} is missing a required "name" or "execute" property.`);
+            }
+        } catch (error) {
+            console.error(`[ERROR] Could not load command at ${path.join(cmdPath, file)}: ${error.message}`);
         }
     });
 
-client.once('ready', () => {
+client.once(Events.ClientReady, () => {
     console.log(`✅ Bot connected as ${client.user.tag}`);
 });
 
-client.on('messageCreate', async (message) => {
+client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot) return;
 
-    // Prefix handling: if PREFIX is empty, accept just the command name
     const raw = message.content.trim();
     let args, commandName;
     if (PREFIX && raw.startsWith(PREFIX)) {
@@ -49,9 +61,22 @@ client.on('messageCreate', async (message) => {
     try {
         await command.execute(message, args);
     } catch (error) {
-        console.error(error);
-        message.reply('❌ There was an error executing the command.');
+        console.error('Error executing command:', error);
+        try {
+            await message.reply('❌ There was an error executing that command. Please try again later.');
+        } catch (replyError) {
+            console.error('Error sending error reply to user:', replyError);
+        }
     }
+});
+
+// Interaction handler
+client.on(Events.InteractionCreate, async interaction => {
+    if (interaction.isButton()) {
+        await handleButtonInteraction(interaction); // Call the handler
+    }
+    // You can add handlers for other interaction types here (e.g., slash commands, select menus)
+    // else if (interaction.isCommand()) { /* handle slash command */ }
 });
 
 // Create HTTP server

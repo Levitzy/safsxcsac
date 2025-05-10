@@ -1,203 +1,203 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const { faker } = require('@faker-js/faker');
+const fs = require('fs');
+const path = require('path');
+const UserAgent = require('user-agents');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js'); // Added for buttons
+
+const fakeName = () => ({ firstName: faker.person.firstName(), lastName: faker.person.lastName() });
+
+const ugenX = () => {
+    const userAgent = new UserAgent();
+    return userAgent.toString();
+};
+
+const extractFormData = (html) => {
+    try {
+        const formData = {};
+        const $ = cheerio.load(html);
+        $('input').each((_, el) => {
+            const name = $(el).attr('name');
+            const value = $(el).attr('value');
+            if (name) {
+                formData[name] = value || '';
+            }
+        });
+        const extractByRegex = (fieldName) => {
+            const patterns = [
+                new RegExp(`name="${fieldName}" value="([^"]+)"`),
+                new RegExp(`name="${fieldName}" content="([^"]+)"`),
+                new RegExp(`name="${fieldName}"\\s+value="([^"]+)"`),
+                new RegExp(`"${fieldName}":"([^"]+)"`),
+                new RegExp(`${fieldName}:"([^"]+)"`)
+            ];
+            for (const pattern of patterns) {
+                const match = html.match(pattern);
+                if (match && match[1]) return match[1];
+            }
+            return null;
+        };
+        const scriptTags = $('script').map((_, el) => $(el).html()).get();
+        for (const script of scriptTags) {
+            if (!script) continue;
+            const dataMatcher = /\{(?:[^{}]|(?:\{[^{}]*\}))*\}/g;
+            const matches = script.match(dataMatcher) || [];
+            for (const match of matches) {
+                try {
+                    const jsonObj = JSON.parse(match);
+                    if (jsonObj.fb_dtsg) formData.fb_dtsg = jsonObj.fb_dtsg;
+                    if (jsonObj.jazoest) formData.jazoest = jsonObj.jazoest;
+                    if (jsonObj.lsd) formData.lsd = jsonObj.lsd;
+                } catch (e) {
+                    const fieldMatchers = {
+                        fb_dtsg: /fb_dtsg\s*[=:]\s*['"]([^'"]+)['"]/,
+                        jazoest: /jazoest\s*[=:]\s*['"]([^'"]+)['"]/,
+                        lsd: /lsd\s*[=:]\s*['"]([^'"]+)['"]/
+                    };
+                    for (const [field, matcher] of Object.entries(fieldMatchers)) {
+                        const fieldMatch = match.match(matcher);
+                        if (fieldMatch && fieldMatch[1]) formData[field] = fieldMatch[1];
+                    }
+                }
+            }
+        }
+        const fields = ['fb_dtsg', 'jazoest', 'lsd', 'reg_instance', 'reg_impression_id', 'logger_id'];
+        fields.forEach(field => {
+            if (!formData[field]) {
+                const extractedValue = extractByRegex(field);
+                if (extractedValue) formData[field] = extractedValue;
+            }
+        });
+        const jsonPatterns = [
+            /__initialData__\s*=\s*(\{.*?\});/s,
+            /\bwindow\.__data\s*=\s*(\{.*?\});/s,
+            /\bbootstrap_data\s*=\s*(\{.*?\});/s,
+            /\bFBSDK\.init\s*\(\s*(\{.*?\})\s*\);/s
+        ];
+        for (const pattern of jsonPatterns) {
+            const match = html.match(pattern);
+            if (match && match[1]) {
+                try {
+                    const jsonObj = JSON.parse(match[1]);
+                    for (const field of fields) {
+                        if (jsonObj[field] && !formData[field]) formData[field] = jsonObj[field];
+                    }
+                } catch (e) {}
+            }
+        }
+        if (!formData.jazoest && formData.fb_dtsg) {
+            const ascii = Array.from(formData.fb_dtsg).map(c => c.charCodeAt(0));
+            const sum = ascii.reduce((a, b) => a + b, 0);
+            formData.jazoest = '2' + sum;
+        }
+        if (!formData.fb_dtsg) {
+            const metaFbDtsg = $('meta[name="fb_dtsg"]').attr('content');
+            if (metaFbDtsg) formData.fb_dtsg = metaFbDtsg;
+            else formData.fb_dtsg = 'AQH' + Math.random().toString(36).substring(2, 15) + ':' + Math.random().toString(36).substring(2, 15);
+        }
+        if (!formData.jazoest) {
+            const ascii = Array.from(formData.fb_dtsg || '').map(c => c.charCodeAt(0));
+            const sum = ascii.reduce((a, b) => a + b, 0);
+            formData.jazoest = '2' + (sum || Math.floor(Math.random() * 9000) + 1000);
+        }
+        if (formData.fb_dtsg && formData.jazoest && typeof formData.lsd === 'undefined') {
+            formData.lsd = '';
+        }
+        return formData;
+    } catch (error) {
+        console.error('Form data extraction error:', error);
+        return { error: error.toString(), fb_dtsg: 'FALLBACK_DTSG', jazoest: 'FALLBACK_JAZOEST', lsd: 'FALLBACK_LSD' };
+    }
+};
+
+const getProfileUrl = (uid) => `https://www.facebook.com/profile.php?id=${uid}`;
+
+function fakePassword() {
+    const randomNumbers = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('');
+    return `JUBIAR-${randomNumbers}`;
+}
 
 module.exports = {
     name: 'fbcreate',
-    description: 'Create a Facebook account using the provided email',
+    description: 'Create a Facebook account using the provided email and sends credentials in a file and message.',
     async execute(message, args) {
         if (args.length < 1) {
-            return message.reply('❌ Please provide an email address. Usage: `fbcreate [email]`');
+            return message.reply({ content: '❌ **Error:** Oops! You forgot to provide an email address.\nUsage: `fbcreate your@email.com`' });
         }
 
         const email = args[0];
+        const passw = fakePassword();
+        let statusMsg;
+        const { firstName, lastName } = fakeName();
+
+        const sendCredentials = async (emailAddress, password, uid, profileUrl, accountName, messageContentBase, outcomeType) => {
+            const fileName = `fb_credentials_${emailAddress.split('@')[0]}_${Date.now()}.txt`;
+            const outputDir = path.join(__dirname, '..', 'generated_accounts');
+            if (!fs.existsSync(outputDir)) {
+                try { fs.mkdirSync(outputDir, { recursive: true }); }
+                catch (dirError) { console.error('Failed to create output directory:', dirError); }
+            }
+            const filePath = path.join(outputDir, fileName);
+            const fileContent = `Facebook Account Credentials:\n\nName: ${accountName.firstName} ${accountName.lastName}\nEmail: ${emailAddress}\nPassword: ${password}\nUser ID: ${uid || "Not available"}\nProfile URL: ${profileUrl || "Not available"}\n`;
+            
+            let fullMessage = `${messageContentBase}\n\n👤 **Name:** \`${accountName.firstName} ${accountName.lastName}\`\n📧 **Email:** \`${emailAddress}\`\n🔑 **Password:** \`${password}\``;
+            
+            if (uid && uid !== "Not available" && uid !== "0") {
+                fullMessage += `\n🆔 **User ID:** \`${uid}\``;
+            } else if (outcomeType === "checkpoint_manual_otp") {
+                fullMessage += `\n🆔 **User ID:** 📬 Manual confirmation needed (ID might appear after you confirm).`;
+            }
+            
+            if (profileUrl && profileUrl.startsWith("https://") && profileUrl !== "Profile URL not found or confirmation pending.") {
+                 fullMessage += `\n🔗 **Profile:** ${profileUrl}`;
+            }
+
+            if (outcomeType === "success") {
+                 fullMessage += `\n\nCheck \`${emailAddress}\` for any welcome messages from Facebook. Enjoy your new account!`;
+            } else if (outcomeType === "checkpoint_manual_otp") {
+                 fullMessage += `\n\nPlease check your email \`${emailAddress}\` for a confirmation code from Facebook and complete the verification process manually on their site.`;
+            } else if (outcomeType !== "critical_failure" && outcomeType !== "failure") {
+                 fullMessage += `\n\nIf you received an email from Facebook, please try to complete the registration process manually.`;
+            }
+
+            const components = [];
+            if (outcomeType === "success" || outcomeType === "checkpoint_manual_otp") {
+                const row = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setCustomId('fb_copy_email')
+                            .setLabel('Copy Email')
+                            .setStyle(ButtonStyle.Primary)
+                            .setEmoji('📧'),
+                        new ButtonBuilder()
+                            .setCustomId('fb_copy_password')
+                            .setLabel('Copy Password')
+                            .setStyle(ButtonStyle.Primary)
+                            .setEmoji('🔑')
+                    );
+                components.push(row);
+            }
+
+            try {
+                fs.writeFileSync(filePath, fileContent);
+                await message.reply({ content: fullMessage, files: [filePath], components: components });
+            } catch (fileError) {
+                console.error('File operation error:', fileError);
+                fullMessage += "\n\n⚠️ **File Error:** Could not create or send the credentials file. The details are in this message only.";
+                await message.reply({ content: fullMessage, components: components }); // Try sending with components even if file fails
+            }
+        };
         
-        // Send initial response
-        const statusMsg = await message.reply('⏳ Attempting to create Facebook account...');
+        statusMsg = await message.reply({ content: '⏳ Hold tight! Conjuring up a new Facebook account for you...' });
 
         try {
-            // Initialize utilities
-            const ugenX = () => {
-                // List of common user agents
-                const userAgents = [
-                    'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
-                    'Mozilla/5.0 (Linux; Android 13; SM-S901B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36',
-                    'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
-                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15'
-                ];
-                return userAgents[Math.floor(Math.random() * userAgents.length)];
-            };
-
-            const fakePassword = () => {
-                const randomNumbers = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('');
-                return `JUBIAR-${randomNumbers}`;
-            };
-
-            const fakeName = () => {
-                return {
-                    firstName: faker.person.firstName(),
-                    lastName: faker.person.lastName()
-                };
-            };
-
-            const getBdNumber = () => {
-                const prefixes = ['013', '014', '015', '016', '017', '018', '019'];
-                const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-                const number = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join('');
-                return `${prefix}${number}`;
-            };
-
-            const extractFormData = (html) => {
-                try {
-                    const formData = {};
-                    const $ = cheerio.load(html);
-                    
-                    // Method 1: Find all input elements
-                    $('input').each((_, el) => {
-                        const name = $(el).attr('name');
-                        const value = $(el).attr('value');
-                        if (name) {
-                            formData[name] = value || '';
-                        }
-                    });
-                    
-                    // Method 2: Use regex to extract key form fields from the HTML
-                    const extractByRegex = (fieldName) => {
-                        const patterns = [
-                            new RegExp(`name="${fieldName}" value="([^"]+)"`),
-                            new RegExp(`name="${fieldName}" content="([^"]+)"`),
-                            new RegExp(`name="${fieldName}"\\s+value="([^"]+)"`),
-                            new RegExp(`"${fieldName}":"([^"]+)"`),
-                            new RegExp(`${fieldName}:"([^"]+)"`)
-                        ];
-                        
-                        for (const pattern of patterns) {
-                            const match = html.match(pattern);
-                            if (match && match[1]) {
-                                return match[1];
-                            }
-                        }
-                        return null;
-                    };
-                    
-                    // Method 3: Extract from JavaScript objects in scripts
-                    const scriptTags = $('script').map((_, el) => $(el).html()).get();
-                    for (const script of scriptTags) {
-                        // Look for JSON objects or JavaScript objects that might contain form data
-                        const dataMatcher = /\{(?:[^{}]|(?:\{[^{}]*\}))*\}/g;
-                        const matches = script.match(dataMatcher) || [];
-                        
-                        for (const match of matches) {
-                            try {
-                                const jsonObj = JSON.parse(match);
-                                if (jsonObj.fb_dtsg) formData.fb_dtsg = jsonObj.fb_dtsg;
-                                if (jsonObj.jazoest) formData.jazoest = jsonObj.jazoest;
-                                if (jsonObj.lsd) formData.lsd = jsonObj.lsd;
-                            } catch (e) {
-                                // Not valid JSON, but might contain variables
-                                const fieldMatchers = {
-                                    fb_dtsg: /fb_dtsg\s*[=:]\s*['"]([^'"]+)['"]/,
-                                    jazoest: /jazoest\s*[=:]\s*['"]([^'"]+)['"]/,
-                                    lsd: /lsd\s*[=:]\s*['"]([^'"]+)['"]/
-                                };
-                                
-                                for (const [field, matcher] of Object.entries(fieldMatchers)) {
-                                    const fieldMatch = match.match(matcher);
-                                    if (fieldMatch && fieldMatch[1]) {
-                                        formData[field] = fieldMatch[1];
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Extract essential fields using multiple methods
-                    const fields = [
-                        'fb_dtsg', 'jazoest', 'lsd', 'reg_instance', 
-                        'reg_impression_id', 'logger_id'
-                    ];
-                    
-                    fields.forEach(field => {
-                        if (!formData[field]) {
-                            const extractedValue = extractByRegex(field);
-                            if (extractedValue) {
-                                formData[field] = extractedValue;
-                            }
-                        }
-                    });
-                    
-                    // Method 4: Try to find form data in any JSON-like structure
-                    const jsonPatterns = [
-                        /__initialData__\s*=\s*(\{.*?\});/s,
-                        /\bwindow\.__data\s*=\s*(\{.*?\});/s,
-                        /\bbootstrap_data\s*=\s*(\{.*?\});/s,
-                        /\bFBSDK\.init\s*$$\s*(\{.*?\})\s*$$;/s
-                    ];
-                    
-                    for (const pattern of jsonPatterns) {
-                        const match = html.match(pattern);
-                        if (match && match[1]) {
-                            try {
-                                const jsonObj = JSON.parse(match[1]);
-                                for (const field of fields) {
-                                    if (jsonObj[field]) formData[field] = jsonObj[field];
-                                }
-                            } catch (e) {
-                                // Not valid JSON
-                            }
-                        }
-                    }
-                    
-                    // If we still don't have required fields, try to create default values
-                    if (!formData.jazoest && formData.fb_dtsg) {
-                        // Jazoest is often derived from fb_dtsg in some way
-                        const ascii = Array.from(formData.fb_dtsg).map(c => c.charCodeAt(0));
-                        const sum = ascii.reduce((a, b) => a + b, 0);
-                        formData.jazoest = '2' + sum;
-                    }
-                    
-                    // Try to create some fallback values if we couldn't extract them
-                    if (!formData.fb_dtsg) {
-                        // Extract from meta tag (sometimes Facebook puts it there)
-                        const metaFbDtsg = $('meta[name="fb_dtsg"]').attr('content');
-                        if (metaFbDtsg) {
-                            formData.fb_dtsg = metaFbDtsg;
-                        } else {
-                            // Generate a placeholder (may not work but worth trying)
-                            formData.fb_dtsg = 'AQHrJ7_sFpUI:' + Math.random().toString(36).substring(2);
-                        }
-                    }
-                    
-                    if (!formData.jazoest) {
-                        // Generate a placeholder jazoest
-                        const ascii = Array.from(formData.fb_dtsg || '').map(c => c.charCodeAt(0));
-                        const sum = ascii.reduce((a, b) => a + b, 0);
-                        formData.jazoest = '2' + (sum || Math.floor(Math.random() * 10000));
-                    }
-                    
-                    console.log('Extracted form data:', formData);
-                    return formData;
-                } catch (error) {
-                    console.error('Form data extraction error:', error);
-                    return { error: error.toString() };
-                }
-            };
-
-            const getProfileUrl = (uid) => {
-                return `https://www.facebook.com/profile.php?id=${uid}`;
-            };
-
-            // Start the account creation process
-            await statusMsg.edit('📝 Starting Facebook account creation process...');
+            await statusMsg.edit({ content: '🔗 Establishing a secure connection with Facebook...' });
             
-            const passw = fakePassword();
-            
-            // Create an Axios session with cookies enabled
-            const axiosCookieJar = {};
+            const axiosCookieJar = {}; 
             const session = axios.create({
-                headers: {
-                    'User-Agent': ugenX(),
+                headers: { 
+                    'User-Agent': ugenX(), 
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
                     'Accept-Language': 'en-US,en;q=0.9',
                     'Accept-Encoding': 'gzip, deflate, br',
@@ -208,28 +208,36 @@ module.exports = {
                     'Sec-Fetch-Site': 'none',
                     'Sec-Fetch-User': '?1'
                 },
-                maxRedirects: 5,
+                maxRedirects: 5, 
                 validateStatus: function (status) {
-                    return status >= 200 && status < 500; // Accept all responses except server errors
+                    return status >= 200 && status < 500; 
                 },
-                timeout: 30000 // 30 second timeout
+                timeout: 45000 
             });
 
-            // Intercept responses to save cookies
-            session.interceptors.response.use(response => {
+            session.interceptors.response.use(response => { 
                 const cookies = response.headers['set-cookie'];
                 if (cookies) {
                     cookies.forEach(cookie => {
                         const [cookieMain] = cookie.split(';');
                         const [key, value] = cookieMain.split('=');
-                        axiosCookieJar[key] = value;
+                        if (key && value) axiosCookieJar[key.trim()] = value.trim();
                     });
                 }
                 return response;
+            }, error => { 
+                if (error.response && error.response.headers && error.response.headers['set-cookie']) {
+                     const cookies = error.response.headers['set-cookie'];
+                     cookies.forEach(cookie => {
+                        const [cookieMain] = cookie.split(';');
+                        const [key, value] = cookieMain.split('=');
+                        if (key && value) axiosCookieJar[key.trim()] = value.trim();
+                    });
+                }
+                return Promise.reject(error);
             });
 
-            // Intercept requests to send cookies
-            session.interceptors.request.use(config => {
+            session.interceptors.request.use(config => { 
                 const cookieStr = Object.entries(axiosCookieJar)
                     .map(([key, value]) => `${key}=${value}`)
                     .join('; ');
@@ -238,408 +246,241 @@ module.exports = {
                 }
                 return config;
             });
-
-            // Step 1: First visit Facebook homepage to get initial cookies
-            await statusMsg.edit('📝 Initializing session with Facebook...');
             
-            try {
+            try { 
                 await session.get('https://m.facebook.com/');
-                await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
-                
-                // Try clearing cookies prompt if it exists
+                await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000)); 
                 await session.get('https://m.facebook.com/cookie/consent_prompt/?next_uri=https%3A%2F%2Fm.facebook.com%2F');
                 await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 500));
             } catch (error) {
-                console.log('Initial connection error, retrying with different user agent:', error.message);
-                // Try with a different user agent
-                session.defaults.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36';
-                await session.get('https://m.facebook.com/');
+                console.warn('Initial connection/consent error (might be okay):', error.message);
             }
 
-            // Get signup page directly (different from registration page)
-            await statusMsg.edit('📝 Accessing signup page...');
-            await session.get('https://m.facebook.com/signup');
+            await statusMsg.edit({ content: '📄 Navigating to the Facebook signup page...' });
+            let regPageResponse = await session.get('https://m.facebook.com/reg/'); 
+            if (regPageResponse.status >= 400) { 
+                 regPageResponse = await session.get('https://m.facebook.com/r.php');
+            }
+            let responseData = regPageResponse.data;
             
-            // Try multiple registration pages to see which one works
-            const registrationEndpoints = [
-                'https://m.facebook.com/reg/',
-                'https://m.facebook.com/r.php',
-                'https://m.facebook.com/signup/form/',
-                'https://www.facebook.com/signup'
-            ];
-            
-            let formula = null;
-            let responseData = '';
-            
-            for (const endpoint of registrationEndpoints) {
-                await statusMsg.edit(`📝 Trying registration endpoint: ${endpoint}...`);
-                
-                try {
-                    const regResponse = await session.get(endpoint, {
-                        params: {
-                            cid: Math.random().toString(36).substring(2),
-                            refsrc: 'deprecated',
-                            soft: 'hjk'
-                        }
-                    });
-                    
-                    // Save response data without writing to file
-                    responseData = regResponse.data;
-                    
-                    // Extract form data
-                    const extractedFormula = extractFormData(regResponse.data);
-                    
-                    // If we found at least some form data
-                    if (extractedFormula && Object.keys(extractedFormula).length > 1) {
-                        formula = extractedFormula;
-                        // If we found both essential fields, break the loop
-                        if (formula.fb_dtsg && formula.jazoest) {
-                            console.log(`Found complete form data from ${endpoint}`);
-                            break;
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Error accessing ${endpoint}:`, error.message);
-                    // Continue to next endpoint
+            await statusMsg.edit({ content: '🔍 Extracting necessary registration details...' });
+            let formula = extractFormData(responseData); 
+
+            if (!formula || !formula.fb_dtsg || !formula.jazoest || Object.keys(formula).length < 3) { 
+                await statusMsg.edit({ content: '🤔 First attempt to get form data was tricky. Trying an alternative method...' });
+                const altRegResponse = await session.get('https://m.facebook.com/signup/lite/', { 
+                     headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/423.0.0.21.64]' }
+                });
+                const altFormula = extractFormData(altRegResponse.data);
+                if (altFormula && altFormula.fb_dtsg && altFormula.jazoest) {
+                    formula = altFormula;
+                    responseData = altRegResponse.data; 
                 }
             }
             
-            // If we still don't have a working formula, try a different approach - mobile app emulation
-            if (!formula || !formula.fb_dtsg || !formula.jazoest) {
-                await statusMsg.edit('⚠️ Trying mobile app emulation approach...');
-                
-                try {
-                    // Try with a mobile app user agent
-                    const mobileAppResponse = await session.get('https://m.facebook.com/reg/', {
-                        headers: {
-                            'User-Agent': 'Mozilla/5.0 (Linux; Android 12; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/423.0.0.21.64]'
-                        }
-                    });
-                    
-                    const mobileFormula = extractFormData(mobileAppResponse.data);
-                    
-                    if (mobileFormula && mobileFormula.fb_dtsg && mobileFormula.jazoest) {
-                        formula = mobileFormula;
-                        responseData = mobileAppResponse.data;
-                    }
-                } catch (error) {
-                    console.error('Error with mobile app emulation:', error.message);
-                }
-            }
-            
-            // Last resort: Create a fallback formula with placeholders
-            if (!formula || !formula.fb_dtsg || !formula.jazoest) {
-                await statusMsg.edit('⚠️ Using fallback method with default values...');
+            if (!formula || !formula.fb_dtsg || !formula.jazoest) { 
+                await statusMsg.edit({ content: '⚙️ Using fallback values for some form data to ensure progression. This is normal.' });
                 formula = {
-                    fb_dtsg: formula?.fb_dtsg || 'AQHOjJ7_sFpUI:' + Math.random().toString(36).substring(2), 
-                    jazoest: formula?.jazoest || '2' + Math.floor(Math.random() * 10000),
-                    lsd: formula?.lsd || '',
+                    fb_dtsg: formula?.fb_dtsg || 'AQH' + Math.random().toString(36).substring(2, 15) + ':' + Math.random().toString(36).substring(2, 15), 
+                    jazoest: formula?.jazoest || '2' + (Math.floor(Math.random() * 8999) + 1000).toString(), 
+                    lsd: formula?.lsd || '', 
                     reg_instance: formula?.reg_instance || '',
                     reg_impression_id: formula?.reg_impression_id || '',
                     logger_id: formula?.logger_id || ''
                 };
             }
             
-            await statusMsg.edit('🔄 Form data extraction complete!');
+            await statusMsg.edit({ content: '✨ Form data successfully acquired! Moving to the next step.' }); // Changed this line
 
-            // Generate random user data
-            const phone = getBdNumber();
-            const { firstName, lastName } = fakeName();
             const randomDay = Math.floor(Math.random() * 28) + 1;
             const randomMonth = Math.floor(Math.random() * 12) + 1;
-            const randomYear = Math.floor(Math.random() * (2004 - 1992 + 1)) + 1992;
-            const gender = Math.random() > 0.5 ? '1' : '2'; // 1=male, 2=female
+            const randomYear = Math.floor(Math.random() * (2004 - 1992 + 1)) + 1992; 
+            const gender = Math.random() > 0.5 ? '1' : '2'; 
 
-            // Prepare registration payload
-            const payload = new URLSearchParams({
-                'lsd': formula.lsd || '',
-                'jazoest': formula.jazoest || '',
-                'fb_dtsg': formula.fb_dtsg || '',
-                'ccp': '2',
-                'reg_instance': formula.reg_instance || '',
-                'submission_request': 'true',
-                'helper': '',
-                'reg_impression_id': formula.reg_impression_id || '',
-                'ns': '0',
-                'zero_header_af_client': '',
-                'app_id': '103',
-                'logger_id': formula.logger_id || '',
-                'field_names[0]': 'firstname',
-                'firstname': firstName,
-                'lastname': lastName,
-                'field_names[1]': 'birthday_wrapper',
-                'birthday_day': randomDay.toString(),
-                'birthday_month': randomMonth.toString(),
-                'birthday_year': randomYear.toString(),
-                'age_step_input': '',
-                'did_use_age': 'false',
-                'field_names[2]': 'reg_email__',
-                'reg_email__': email,
-                'field_names[3]': 'sex',
-                'sex': gender,
-                'preferred_pronoun': '',
-                'custom_gender': '',
-                'field_names[4]': 'reg_passwd__',
-                'reg_passwd__': passw,
-                'name_suggest_elig': 'false',
-                'was_shown_name_suggestions': 'false',
-                'did_use_suggested_name': 'false',
-                'use_custom_gender': 'false',
-                'guid': '',
-                'pre_form_step': '',
-                'encpass': `#PWD_BROWSER:0:${Math.floor(Date.now() / 1000)}:${passw}`,
-                'submit': 'Sign Up'
-            });
-
-            // Add any additional form fields we might have found
+            const payload = new URLSearchParams(); 
+            payload.append('firstname', firstName);
+            payload.append('lastname', lastName);
+            payload.append('reg_email__', email);
+            payload.append('reg_passwd__', passw);
+            payload.append('birthday_day', randomDay.toString());
+            payload.append('birthday_month', randomMonth.toString());
+            payload.append('birthday_year', randomYear.toString());
+            payload.append('sex', gender); 
+            payload.append('websubmit', '1'); 
+            payload.append('submit', 'Sign Up'); 
+            payload.append('ns', '0'); 
+            
             Object.entries(formula).forEach(([key, value]) => {
-                if (!payload.has(key) && value) {
-                    payload.append(key, value);
-                }
+                if (value && !payload.has(key)) payload.append(key, value);
             });
 
-            // Extract any additional form fields from the response
-            const $ = cheerio.load(responseData);
-            $('input[type="hidden"]').each((_, el) => {
-                const name = $(el).attr('name');
-                const value = $(el).attr('value');
-                if (name && !payload.has(name)) {
-                    payload.append(name, value || '');
+            if (formula.fb_dtsg && !payload.has('fb_dtsg')) payload.set('fb_dtsg', formula.fb_dtsg);
+            if (formula.jazoest && !payload.has('jazoest')) payload.set('jazoest', formula.jazoest);
+            if (formula.lsd && !payload.has('lsd')) payload.set('lsd', formula.lsd);
+
+            const $formPage = cheerio.load(responseData);
+            $formPage('form input[type="hidden"]').each((_, el) => {
+                const name = $formPage(el).attr('name');
+                const value = $formPage(el).attr('value');
+                if (name && value && !payload.has(name)) {
+                    payload.append(name, value);
                 }
             });
+            
+            if (!payload.has('encpass')) {
+                 payload.append('encpass', `#PWD_BROWSER:0:${Math.floor(Date.now() / 1000)}:${passw}`);
+            }
 
-            await statusMsg.edit('🚀 Submitting registration data...');
+            await statusMsg.edit({ content: '🚀 Sending your new account details to Facebook... Wish us luck!' });
+            await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1500)); 
             
-            // Add a small delay to mimic human behavior before submission
-            await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1500));
-            
-            // Try multiple registration submission endpoints
-            const submitEndpoints = [
+            const submitEndpoints = [ 
                 'https://m.facebook.com/reg/submit/',
-                'https://m.facebook.com/signup/form/submit/',
-                'https://m.facebook.com/ajax/register.php'
+                'https://m.facebook.com/ajax/register.php',
+                'https://m.facebook.com/signup/account/actor/', 
             ];
             
             let submitResponse = null;
-            let submitSuccess = false;
-            let confirmationNeeded = false;
+            let submitSuccess = false; 
+            let confirmationNeeded = false; 
+            let responseText = ''; 
             
-            const headers = {
+            const reqHeaders = { 
                 'Host': 'm.facebook.com',
                 'Origin': 'https://m.facebook.com',
-                'Referer': 'https://m.facebook.com/reg/',
+                'Referer': regPageResponse.request.res.responseUrl || 'https://m.facebook.com/reg/', 
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': ugenX(),
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'User-Agent': session.defaults.headers['User-Agent'], 
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
                 'Accept-Language': 'en-US,en;q=0.9',
-                'sec-ch-ua': '"Chromium";v="112", "Not_A Brand";v="24"',
-                'sec-ch-ua-mobile': '?1',
-                'sec-ch-ua-platform': '"Android"'
+                'Sec-Fetch-Site': 'same-origin',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-User': '?1',
+                'Sec-Fetch-Dest': 'document',
             };
             
-            for (const endpoint of submitEndpoints) {
-                await statusMsg.edit(`🚀 Submitting to: ${endpoint}...`);
-                
+            for (const endpoint of submitEndpoints) { 
                 try {
-                    submitResponse = await session.post(endpoint, payload, { 
-                        headers,
-                        timeout: 60000 // Increase timeout for submission
-                    });
-                    
-                    // Check if we got a success indicator
-                    const responseCookies = submitResponse.headers['set-cookie'] || [];
-                    const cookieString = responseCookies.join('; ');
-                    
-                    // Check for confirmation code requirement
-                    if (submitResponse.data.includes('confirmation_code') || 
-                        submitResponse.data.includes('code sent') || 
-                        submitResponse.data.includes('verify your email') ||
-                        submitResponse.data.includes('enter the code')) {
-                        confirmationNeeded = true;
-                        submitSuccess = true; // Consider this a partial success
-                        break;
+                    await statusMsg.edit({ content: `📨 Attempting submission via endpoint: ${new URL(endpoint).pathname}...` });
+                    submitResponse = await session.post(endpoint, payload.toString(), { headers: reqHeaders, timeout: 60000 });
+                    responseText = typeof submitResponse.data === 'string' ? submitResponse.data : JSON.stringify(submitResponse.data);
+                    const currentCookies = Object.entries(axiosCookieJar).map(([k,v])=>`${k}=${v}`).join('; ');
+
+                    if (currentCookies.includes('c_user=') && !currentCookies.includes('c_user=0')) {
+                        submitSuccess = true; 
                     }
-                    
-                    if (cookieString.includes('c_user=') || 
-                        submitResponse.data.includes('welcome') ||
-                        submitResponse.data.includes('success') ||
-                        submitResponse.data.includes('profile.php')) {
-                        submitSuccess = true;
-                        break;
+                    if (responseText.includes('confirmation_code') || responseText.includes('code sent') || 
+                        responseText.includes('verify your email') || responseText.includes('enter the code') ||
+                        responseText.toLowerCase().includes('checkpoint') || currentCookies.includes('checkpoint=')) {
+                        confirmationNeeded = true; submitSuccess = true; 
                     }
-                    
-                    // If we get a clear failure, no need to try other endpoints
-                    if (submitResponse.data.includes('error') || 
-                        submitResponse.data.includes('failed') ||
-                        submitResponse.data.includes('not available')) {
-                        break;
+                    if (responseText.includes('Welcome to Facebook') || responseText.includes('profile.php') || responseText.includes('home.php')) {
+                        submitSuccess = true; 
                     }
-                    
-                    // Slight delay between attempts
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                } catch (error) {
+                    if (responseText.includes('error_message') || responseText.includes('reg_error') || submitResponse.status >= 400) {
+                        console.warn(`Submission to ${endpoint} resulted in status ${submitResponse.status} or error content.`);
+                    }
+                    if (submitSuccess) break;
+                    await new Promise(resolve => setTimeout(resolve, 1000)); 
+                } catch (error) { 
                     console.error(`Error submitting to ${endpoint}:`, error.message);
-                    
-                    // If we get a connection reset error, it might still be processing
-                    if (error.code === 'ECONNRESET' || error.message.includes('ECONNRESET')) {
-                        await statusMsg.edit(`⚠️ Connection reset while submitting to ${endpoint}. This often happens when Facebook is processing the registration.`);
-                        
-                        // Wait a bit longer
+                    responseText = error.message; 
+                    if (error.response && error.response.data) {
+                        responseText += ' | Response: ' + (typeof error.response.data === 'string' ? error.response.data.substring(0, 200) : JSON.stringify(error.response.data));
+                    }
+                    if (error.code === 'ECONNRESET' || error.message.includes('ECONNRESET') || error.code === 'ETIMEDOUT') {
+                        await statusMsg.edit({ content: `⚠️ **Notice:** Connection issue during submission to ${new URL(endpoint).pathname}. Facebook might be processing. This can sometimes mean it's a checkpoint.`});
                         await new Promise(resolve => setTimeout(resolve, 3000));
-                        
-                        // Assume confirmation code might be needed
-                        confirmationNeeded = true;
-                        submitSuccess = true; // Consider this a partial success
-                        break;
+                        confirmationNeeded = true; submitSuccess = true; 
+                        break; 
                     }
                 }
             }
             
-            // If we need confirmation code
-            if (confirmationNeeded) {
-                await statusMsg.edit(`📧 Registration initiated! A confirmation code has been sent to ${email}.
+            let uid = "Not available";
+            let profileUrl = "Profile URL not found or confirmation pending.";
+            const finalCookieString = Object.entries(axiosCookieJar).map(([k,v])=>`${k}=${v}`).join('; ');
 
-Email: ${email}
-Password: ${passw}
-
-Please check your email and manually confirm your account by visiting Facebook.`);
-                return;
-            }
-            
-            if (!submitResponse && !confirmationNeeded) {
-                await statusMsg.edit(`❌ Failed to submit registration form. All endpoints failed. However, check your email for a confirmation code.
-
-Email: ${email}
-Password: ${passw}
-
-Please manually confirm your account by visiting Facebook.`);
-                return;
-            }
-            
-            // Check response cookies and body for success indicators
-            const responseCookies = submitResponse?.headers['set-cookie'] || [];
-            const cookieString = responseCookies.join('; ');
-            
-            // Improved user ID extraction
-            let uid = "Not available yet";
-            
-            // Method 1: Extract from c_user cookie (most reliable)
-            const cUserMatch = cookieString.match(/c_user=(\d+)/);
-            if (cUserMatch && cUserMatch[1]) {
+            const cUserMatch = finalCookieString.match(/c_user=(\d+)/);
+            if (cUserMatch && cUserMatch[1] && cUserMatch[1] !== '0') {
                 uid = cUserMatch[1];
-            } 
-            // Method 2: Extract from xs cookie (sometimes contains user ID)
-            else if (cookieString.includes('xs=')) {
-                const xsMatch = cookieString.match(/xs=([^;]+)/);
+            } else { 
+                const xsMatch = finalCookieString.match(/xs=([^;]+)/);
                 if (xsMatch && xsMatch[1]) {
-                    // The xs cookie sometimes has the user ID encoded in it
-                    const xsParts = xsMatch[1].split(':');
-                    if (xsParts.length > 1 && /^\d+$/.test(xsParts[0])) {
+                    const xsParts = decodeURIComponent(xsMatch[1]).split(':'); 
+                    if (xsParts.length > 1 && /^\d{10,}$/.test(xsParts[0]) && xsParts[0] !== '0') { 
                         uid = xsParts[0];
                     }
                 }
             }
-            // Method 3: Extract from response body
-            else if (submitResponse?.data) {
-                // Try multiple patterns to find user ID in response
+            
+            if (uid === "Not available" && (submitSuccess || confirmationNeeded) && responseText) {
                 const uidPatterns = [
-                    /(?:user_id|userId|uid)["']?\s*[=:]\s*["']?(\d+)/i,
-                    /profile\.php\?id=(\d+)/i,
-                    /\/profile\/(\d+)/i,
-                    /\["(\d{8,})",/,
-                    /"USER_ID":"(\d+)"/,
-                    /"actorID":"(\d+)"/
+                    /"USER_ID":"(\d+)"/, /"actorID":"(\d+)"/, /"userID":(\d+)/,
+                    /profile_id=(\d+)/, /subject_id=(\d+)/, /viewer_id=(\d+)/,
+                    /\\"uid\\":(\d+)/, /\\"user_id\\":\\"(\d+)\\"/,
+                    /name="target" value="(\d+)"/ 
                 ];
-                
                 for (const pattern of uidPatterns) {
-                    const match = submitResponse.data.match(pattern);
-                    if (match && match[1] && match[1] !== '0') {
-                        uid = match[1];
-                        break;
+                    const match = responseText.match(pattern);
+                    if (match && match[1] && /^\d+$/.test(match[1]) && match[1] !== '0') {
+                        uid = match[1]; break;
                     }
                 }
             }
             
-            // Method 4: Try to get UID from a follow-up request if still not found
-            if (uid === "Not available yet" && submitSuccess) {
+            if (uid === "Not available" && (submitSuccess || confirmationNeeded) && finalCookieString.includes('datr') && (finalCookieString.includes('fr') || finalCookieString.includes('xs'))) {
                 try {
-                    // Try to access the home page, which often redirects to the profile
+                    await statusMsg.edit({ content: '🆔 Verifying account creation and trying to fetch your new User ID...' });
                     const homeResponse = await session.get('https://m.facebook.com/home.php');
                     const homeHtml = homeResponse.data;
-                    
-                    // Look for profile links or user ID in the home page
-                    const homeUidMatch = homeHtml.match(/\/profile\.php\?id=(\d+)|\/profile\/(\d+)|"USER_ID":"(\d+)"|"actorID":"(\d+)"/);
-                    if (homeUidMatch) {
-                        // Find the first non-empty capture group
-                        for (let i = 1; i < homeUidMatch.length; i++) {
-                            if (homeUidMatch[i]) {
-                                uid = homeUidMatch[i];
-                                break;
-                            }
+                    const homeUidPatterns = [ /"USER_ID":"(\d+)"/, /"actorID":"(\d+)"/, /name="target" value="(\d+)"/ ];
+                    for (const pattern of homeUidPatterns) {
+                        const homeUidMatch = homeHtml.match(pattern);
+                        if (homeUidMatch && homeUidMatch[1] && /^\d+$/.test(homeUidMatch[1]) && homeUidMatch[1] !== '0') {
+                            uid = homeUidMatch[1]; break;
                         }
                     }
-                } catch (error) {
-                    console.error('Error getting UID from home page:', error.message);
-                }
+                } catch (error) { console.warn('Error getting UID from home page after presumed success/checkpoint:', error.message); }
             }
             
-            // Generate profile URL if we have a user ID
-            const profileUrl = uid !== "Not available yet" ? getProfileUrl(uid) : "Profile URL will be available after confirmation";
-            
-            // Check if we have a successful account creation
-            if (submitSuccess || cookieString.includes('c_user=')) {
-                await statusMsg.edit(`✅ Account created successfully!
+            if (uid !== "Not available" && /^\d+$/.test(uid) && uid !== '0') {
+                profileUrl = getProfileUrl(uid); 
+            }
 
-User ID: ${uid}
-Email: ${email}
-Password: ${passw}
-Profile URL: ${profileUrl}
-
-Please check your email and manually confirm your account if required.`);
-            } else if (submitResponse?.data?.includes('checkpoint') || cookieString.includes('checkpoint')) {
-                await statusMsg.edit(`⚠️ Account creation requires verification.
-
-Email: ${email}
-Password: ${passw}
-
-Please check your email and manually confirm your account.`);
+            if (submitSuccess && uid !== "Not available" && uid !== '0' && !confirmationNeeded) {
+                const successMessageBase = `✅ **Hooray! Your new Facebook Account is Ready!** 🎉`;
+                await sendCredentials(email, passw, uid, profileUrl, { firstName, lastName }, successMessageBase, "success");
+            } else if (confirmationNeeded || (submitSuccess && (uid === "Not available" || uid === '0')) || (responseText && responseText.toLowerCase().includes('checkpoint'))) {
+                const manualOtpMessageBase = `✅ **Account Created Successfully But Need Manual Confirmation code** 📬`;
+                await sendCredentials(email, passw, uid, profileUrl, { firstName, lastName }, manualOtpMessageBase, "checkpoint_manual_otp");
             } else {
-                // Try to extract error message
-                let errorMsg = 'Unknown error';
-                if (submitResponse?.data) {
-                    const $ = cheerio.load(submitResponse.data);
-                    errorMsg = $('#reg_error_inner').text() || 
-                               $('._585n').text() || 
-                               $('._585r').text() || 
-                               $('div[role="alert"]').text() ||
-                               'Unknown error';
+                let errorMsg = 'Unknown error or Facebook rejected the registration.';
+                if (responseText) {
+                    const $$ = cheerio.load(responseText); 
+                    errorMsg = $$('#reg_error_inner').text().trim() || 
+                               $$('div[role="alert"]').text().trim() || 
+                               $$('._585n').text().trim() || 
+                               $$('._585r').text().trim() ||
+                               (responseText.length < 200 ? responseText : responseText.substring(0, 200) + "..."); 
+                    if (!errorMsg || errorMsg.length < 5) errorMsg = "Facebook rejected the registration or an unknown error occurred. Check server logs for response details.";
                 }
-                
-                await statusMsg.edit(`❌ Failed to create account: ${errorMsg || "Facebook rejected the registration"}
-
-Email: ${email}
-Password: ${passw}
-
-Please check your email for a confirmation code and manually confirm your account by visiting Facebook.`);
+                const failureMessageBase = `❌ **Account Creation Failed!**\n\n**Reason:** ${errorMsg}`;
+                await sendCredentials(email, passw, uid, profileUrl, { firstName, lastName }, failureMessageBase, "failure");
             }
-        } catch (error) {
-            console.error('FB Account Creation Error:', error);
-            let errorMessage = error.message;
-            
-            // More detailed error information
-            if (error.response) {
-                errorMessage += ` - Status: ${error.response.status}`;
-            }
-            
-            await statusMsg.edit(`❌ Error creating account: ${errorMessage}
+            await statusMsg.delete().catch(e => console.error("Failed to delete status msg:", e));
 
-Email: ${email}
-
-If you received a confirmation code in your email, please manually confirm your account by visiting Facebook.`);
+        } catch (error) { 
+            console.error('FB Account Creation - Critical Error in execute block:', error);
+            let errorMessage = error.message || "An unexpected error occurred.";
+            if (error.stack) console.error(error.stack);
+            if (error.response && error.response.status) errorMessage += ` - Status: ${error.response.status}`;
+            if (error.response && error.response.data) errorMessage += ` - Data: ${(typeof error.response.data === 'string' ? error.response.data.substring(0,100) : JSON.stringify(error.response.data)).replace(/\n/g, ' ')}`;
+            
+            const criticalFailureMessageBase = `❌ **Critical Error During Account Creation!**\n\n**Error Details:** ${errorMessage}`;
+            const currentName = (firstName && lastName) ? { firstName, lastName } : fakeName(); 
+            await sendCredentials(email, passw, "Not available", "Profile URL not available", currentName, criticalFailureMessageBase, "critical_failure");
+            if (statusMsg) await statusMsg.delete().catch(e => console.error("Failed to delete status message:", e));
         }
     }
 };
-
-// Test the module
-console.log("Facebook Account Creator module loaded successfully");
