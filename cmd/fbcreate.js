@@ -121,6 +121,7 @@ function fakePassword() {
 module.exports = {
     name: 'fbcreate',
     description: 'Create a Facebook account using the provided email and sends credentials in a file and message.',
+    admin_only: true,
     async execute(message, args) {
         if (args.length < 1) {
             return message.reply({ content: '❌ **Error:** Oops! You forgot to provide an email address.\nUsage: `fbcreate your@email.com`' });
