@@ -1,3 +1,7 @@
 {
-  "ADMIN_IDS": [""]
+  "ADMIN_PERMISSIONS": {
+    "1133953362530926622": [
+      "proxytest"
+    ]
+  }
 }
