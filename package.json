@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "@faker-js/faker": "^9.7.0",
+    "@octokit/rest": "^21.1.1",
     "axios": "^1.9.0",
     "axios-cookiejar-support": "^6.0.2",
     "cheerio": "^1.0.0",
