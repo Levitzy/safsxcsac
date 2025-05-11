@@ -7,59 +7,67 @@ const https = require('https');
 const url = require('url');
 const { Octokit } = require('@octokit/rest');
 
-const ADMIN_IDS_URL = process.env.ADMIN_IDS_URL || 'https://raw.githubusercontent.com/Levitzy/safsxcsac/refs/heads/main/admin_ids.json';
+const ADMIN_CONFIG_URL = process.env.ADMIN_IDS_URL || 'https://raw.githubusercontent.com/Levitzy/safsxcsac/refs/heads/main/admin_ids.json'; // URL should point to new structure
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPO_OWNER = process.env.GITHUB_REPO_OWNER;
 const GITHUB_REPO_NAME = process.env.GITHUB_REPO_NAME;
-const GITHUB_FILE_PATH = process.env.GITHUB_FILE_PATH;
+const GITHUB_FILE_PATH = process.env.GITHUB_FILE_PATH; // Should be the path to the admin_ids.json file
 const GITHUB_BRANCH = process.env.GITHUB_BRANCH;
 
 let setup = require('./setup.json');
 let PREFIX = typeof setup.PREFIX === 'string' ? setup.PREFIX : '';
-let ADMIN_IDS = [];
+let ADMIN_PERMISSIONS = {}; // Changed from ADMIN_IDS to ADMIN_PERMISSIONS
 
 let octokit;
 if (GITHUB_TOKEN && GITHUB_REPO_OWNER && GITHUB_REPO_NAME && GITHUB_FILE_PATH && GITHUB_BRANCH) {
     octokit = new Octokit({ auth: GITHUB_TOKEN });
     console.log('GitHub API client initialized for repository updates.');
 } else {
-    console.warn('[WARN] GitHub API credentials for writing not fully configured. Admin ID updates to GitHub will be disabled.');
+    console.warn('[WARN] GitHub API credentials for writing not fully configured. Admin permission updates to GitHub will be disabled.');
 }
 
-async function fetchAdminIDs() {
+async function fetchAdminPermissions() { // Renamed from fetchAdminIDs
     return new Promise((resolve, reject) => {
-        https.get(ADMIN_IDS_URL, (res) => {
+        https.get(ADMIN_CONFIG_URL, (res) => {
             let data = '';
             res.on('data', (chunk) => { data += chunk; });
             res.on('end', () => {
                 try {
-                    const adminData = JSON.parse(data);
-                    if (Array.isArray(adminData.ADMIN_IDS)) {
-                        ADMIN_IDS = adminData.ADMIN_IDS;
-                        console.log('Admin IDs loaded from GitHub:', ADMIN_IDS);
-                        resolve(ADMIN_IDS);
+                    let jsonDataToParse = data.trim();
+                    if (jsonDataToParse.charCodeAt(0) === 0xFEFF) { 
+                        jsonDataToParse = jsonDataToParse.substring(1);
+                    }
+                    
+                    const adminData = JSON.parse(jsonDataToParse);
+                    if (adminData && typeof adminData.ADMIN_PERMISSIONS === 'object' && adminData.ADMIN_PERMISSIONS !== null) {
+                        ADMIN_PERMISSIONS = adminData.ADMIN_PERMISSIONS;
+                        console.log('Admin permissions loaded from GitHub:', ADMIN_PERMISSIONS);
+                        resolve(ADMIN_PERMISSIONS);
                     } else {
-                        console.error('Invalid admin_ids.json format from GitHub. Expected ADMIN_IDS array.');
-                        resolve([]);
+                        console.error('Invalid admin_ids.json format from GitHub. Expected ADMIN_PERMISSIONS object.');
+                        ADMIN_PERMISSIONS = {}; // Reset to empty if format is wrong
+                        resolve({});
                     }
                 } catch (error) {
                     console.error('Error parsing admin_ids.json from GitHub:', error);
-                    resolve([]);
+                    ADMIN_PERMISSIONS = {};
+                    resolve({});
                 }
             });
         }).on('error', (error) => {
-            console.error('Error fetching admin IDs from GitHub:', error);
-            resolve([]);
+            console.error('Error fetching admin permissions from GitHub:', error);
+            ADMIN_PERMISSIONS = {};
+            resolve({});
         });
     });
 }
 
-async function updateAdminFileOnGitHub(newAdminArray) {
+async function updateAdminPermissionsFileOnGitHub(newAdminPermissionsObject) { // Renamed
     if (!octokit) {
         throw new Error('GitHub API client not configured. Cannot update admin_ids.json on GitHub.');
     }
 
-    const content = JSON.stringify({ ADMIN_IDS: newAdminArray }, null, 2);
+    const content = JSON.stringify({ ADMIN_PERMISSIONS: newAdminPermissionsObject }, null, 2);
     const contentEncoded = Buffer.from(content).toString('base64');
     let fileSha;
 
@@ -79,7 +87,7 @@ async function updateAdminFileOnGitHub(newAdminArray) {
             console.log(`File ${GITHUB_FILE_PATH} not found on branch ${GITHUB_BRANCH}. Will attempt to create it.`);
         }
 
-        const commitMessage = `Update admin_ids.json via bot admin panel - ${new Date().toISOString()}`;
+        const commitMessage = `Update admin_ids.json (permissions) via bot admin panel - ${new Date().toISOString()}`;
         
         await octokit.repos.createOrUpdateFileContents({
             owner: GITHUB_REPO_OWNER,
@@ -99,11 +107,11 @@ async function updateAdminFileOnGitHub(newAdminArray) {
             }
         });
 
-        console.log('admin_ids.json successfully updated on GitHub.');
-        ADMIN_IDS = [...newAdminArray];
-        return { success: true, message: 'Admin IDs successfully updated on GitHub.' };
+        console.log('admin_ids.json (permissions) successfully updated on GitHub.');
+        ADMIN_PERMISSIONS = { ...newAdminPermissionsObject }; // Update in-memory cache
+        return { success: true, message: 'Admin permissions successfully updated on GitHub.' };
     } catch (error) {
-        console.error('Error updating admin_ids.json on GitHub:', error.message);
+        console.error('Error updating admin_ids.json (permissions) on GitHub:', error.message);
         let detailedError = error.message;
         if (error.response && error.response.data && error.response.data.message) {
             detailedError = error.response.data.message;
@@ -125,8 +133,8 @@ function reloadConfig() {
     }
 }
 
-fetchAdminIDs().then(() => {
-    console.log('Initial admin IDs loaded from GitHub.');
+fetchAdminPermissions().then(() => { // Renamed
+    console.log('Initial admin permissions loaded.');
 });
 
 const handleButtonInteraction = require('./handler/button_interaction');
@@ -156,8 +164,12 @@ fs.readdirSync(cmdPath)
         }
     });
 
-function hasAdminPermission(userId) {
-    return ADMIN_IDS.includes(String(userId));
+function hasAdminPermission(userId, commandName) { // Updated function
+    const userPerms = ADMIN_PERMISSIONS[String(userId)];
+    if (userPerms && Array.isArray(userPerms)) {
+        return userPerms.includes('all') || userPerms.includes(commandName);
+    }
+    return false;
 }
 
 client.once(Events.ClientReady, () => {
@@ -182,14 +194,15 @@ client.on(Events.MessageCreate, async (message) => {
     const command = client.commands.get(commandName);
     if (!command) return;
 
-    if (command.admin_only && !hasAdminPermission(message.author.id)) {
-        return message.reply('❌ You do not have permission to use this command.');
+    // Updated permission check
+    if (command.admin_only && !hasAdminPermission(message.author.id, command.name)) {
+        return message.reply('❌ You do not have permission to use this specific command.');
     }
 
     try {
         await command.execute(message, args);
     } catch (error) {
-        console.error('Error executing command:', error);
+        console.error(`Error executing command '${commandName}':`, error);
         try {
             await message.reply('❌ There was an error executing that command. Please try again later.');
         } catch (replyError) {
@@ -226,11 +239,12 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
             PREFIX: PREFIX,
-            ADMIN_IDS: ADMIN_IDS,
-            ADMIN_IDS_URL: ADMIN_IDS_URL,
+            ADMIN_PERMISSIONS: ADMIN_PERMISSIONS, // Changed
+            ADMIN_CONFIG_URL: ADMIN_CONFIG_URL, // Source URL for admin permissions
             GITHUB_CONFIGURED: !!octokit
         }));
     } else if (pathname === '/api/config' && req.method === 'POST') {
+        // This endpoint only updates PREFIX for now.
         let body = '';
         req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', () => {
@@ -262,63 +276,79 @@ const server = http.createServer(async (req, res) => {
                 res.end(JSON.stringify({ error: 'Failed to update prefix configuration' }));
             }
         });
-    } else if (pathname === '/api/admin-ids/refresh' && req.method === 'GET') {
+    } else if (pathname === '/api/admin-permissions/refresh' && req.method === 'GET') { // Renamed endpoint
         try {
-            await fetchAdminIDs();
+            await fetchAdminPermissions();
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ 
                 success: true,
-                ADMIN_IDS: ADMIN_IDS,
-                source: ADMIN_IDS_URL,
-                message: 'Admin IDs refreshed from GitHub.'
+                ADMIN_PERMISSIONS: ADMIN_PERMISSIONS, // Changed
+                source: ADMIN_CONFIG_URL,
+                message: 'Admin permissions refreshed from GitHub.'
             }));
         } catch (error) {
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ 
-                error: 'Failed to refresh admin IDs',
+                error: 'Failed to refresh admin permissions',
                 message: error.message 
             }));
         }
-    } else if (pathname === '/api/admin-ids/update' && req.method === 'POST') {
+    } else if (pathname === '/api/admin-permissions/update' && req.method === 'POST') { // Renamed endpoint
         if (!octokit) {
             res.writeHead(503, { 'Content-Type': 'application/json' });
-            return res.end(JSON.stringify({ error: 'GitHub API not configured on server.', message: 'Cannot update admin IDs on GitHub.' }));
+            return res.end(JSON.stringify({ error: 'GitHub API not configured on server.', message: 'Cannot update admin permissions on GitHub.' }));
         }
         let body = '';
         req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', async () => {
             try {
-                const { admin_ids: newAdminIdsArray } = JSON.parse(body);
-                if (!Array.isArray(newAdminIdsArray)) {
+                const { admin_permissions: newAdminPermsObject } = JSON.parse(body); // Expecting admin_permissions
+                if (typeof newAdminPermsObject !== 'object' || newAdminPermsObject === null) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });
-                    return res.end(JSON.stringify({ error: 'Invalid data format. Expected { admin_ids: [...] }' }));
+                    return res.end(JSON.stringify({ error: 'Invalid data format. Expected { admin_permissions: { "USER_ID": ["cmd1"], ... } }' }));
                 }
 
-                const validatedAdminIds = newAdminIdsArray.map(String).filter(id => /^\d{17,19}$/.test(id));
+                // Basic validation for the structure
+                const validatedPerms = {};
+                for (const userId in newAdminPermsObject) {
+                    if (/^\d{17,19}$/.test(userId) && Array.isArray(newAdminPermsObject[userId])) {
+                        validatedPerms[userId] = newAdminPermsObject[userId].map(String).filter(cmd => cmd.length > 0);
+                    } else {
+                         // Log invalid entry but continue with valid ones, or reject entirely
+                        console.warn(`Invalid entry for user ID ${userId} in admin permissions update.`);
+                    }
+                }
                 
-                const result = await updateAdminFileOnGitHub(validatedAdminIds);
+                const result = await updateAdminPermissionsFileOnGitHub(validatedPerms);
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ ...result, ADMIN_IDS: validatedAdminIds }));
+                res.end(JSON.stringify({ ...result, ADMIN_PERMISSIONS: validatedPerms }));
             } catch (error) {
-                console.error('Error processing GitHub admin ID update request:', error);
+                console.error('Error processing GitHub admin permissions update request:', error);
                 res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Failed to update admin IDs on GitHub.', message: error.message }));
+                res.end(JSON.stringify({ error: 'Failed to update admin permissions on GitHub.', message: error.message }));
             }
         });
     } else if (pathname === '/api/commands' && req.method === 'GET') {
-        const totalCommands = client.commands.size;
-        const adminCommands = Array.from(client.commands.values()).filter(cmd => cmd.admin_only).length;
+        const commandsList = Array.from(client.commands.values()).map(cmd => ({
+            name: cmd.name,
+            description: cmd.description || 'No description available.',
+            admin_only: !!cmd.admin_only // Ensure boolean
+        }));
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ total: totalCommands, admin: adminCommands }));
+        res.end(JSON.stringify({ commands: commandsList }));
     } else {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(adminPanelHTML);
     }
 });
 
-const PORT = 5000;
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Admin panel available at http://0.0.0.0:${PORT}`);
+const PORT = process.env.PORT || 5000; // Allow PORT to be set via environment variable
+server.listen(PORT, '0.0.0.0', () => { // Changed '0.0.0.0' to 'localhost'
+    console.log(`Admin panel is now listening only on localhost.`);
+    console.log(`Admin panel available at http://localhost:${PORT}`);
+    console.log(`Bot is attempting to log in...`);
 });
 
-client.login(process.env.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN)
+    .then(() => console.log('Discord client login successful.'))
+    .catch(err => console.error('Discord client login failed:', err));
