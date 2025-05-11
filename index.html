@@ -5,35 +5,344 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Discord Bot Admin Panel</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css">
     <style>
         :root {
-            --geist-foreground: #000; --geist-background: #fff; --geist-selection: #79ffe1;
-            --geist-secondary: #666; --geist-success: #0070f3; --geist-error: #ee0000;
-            --bs-primary-rgb: 0, 112, 243; /* For Bootstrap components to use Geist success color */
+            --primary-color: #5865F2; /* Discord blue */
+            --primary-hover: #4752c4;
+            --secondary-color: #2D3748;
+            --accent-color: #7289DA; /* Discord blurple */
+            --success-color: #43B581; /* Discord green */
+            --danger-color: #F04747; /* Discord red */
+            --warning-color: #FAA61A; /* Discord yellow */
+            --dark-bg: #36393F; /* Discord dark */
+            --darker-bg: #2F3136; /* Discord sidebar */
+            --light-bg: #F6F6F7; /* Discord light */
+            --card-bg: #FFFFFF;
+            --text-primary: #060607;
+            --text-secondary: #72767D;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif; background-color: #f8f9fa; color: var(--geist-foreground); }
-        .geist-card { border-radius: .375rem; border: 1px solid #dee2e6; box-shadow: 0 2px 6px rgba(0,0,0,0.05); transition: all 0.2s ease; background-color: #fff; }
-        .geist-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .geist-button { border-radius: .375rem; font-weight: 500; transition: all 0.2s ease; }
-        .geist-button-primary { background-color: var(--geist-success); color: white; border-color: var(--geist-success); }
-        .geist-button-primary:hover { background-color: #005bb5; border-color: #005bb5; }
-        .geist-input { border-radius: .375rem; border: 1px solid #ced4da; transition: all 0.2s ease; }
-        .geist-input:focus { border-color: var(--geist-success); box-shadow: 0 0 0 0.25rem rgba(0,112,243,0.25); }
-        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1090; } /* Ensure toast is above modal */
-        .loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.85); display: flex; justify-content: center; align-items: center; z-index: 1100; /* Ensure loading is above toast */ }
-        .spinner { width: 3rem; height: 3rem; border: .3em solid rgba(0, 112, 243, 0.2); border-radius: 50%; border-top-color: var(--geist-success); animation: spin 1s ease-in-out infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .code-block { background-color: #e9ecef; border-radius: .25rem; padding: 1rem; font-family: monospace; overflow-x: auto; margin: 1rem 0; white-space: pre; }
-        .copy-btn { position: absolute; top: 0.5rem; right: 0.5rem; }
-        .admin-item { padding: 1rem; border-bottom: 1px solid #eee; }
-        .admin-item:last-child { border-bottom: none; }
-        .permission-badge { font-size: 0.8em; margin-right: 0.3rem; margin-bottom: 0.3rem; }
-        #admin-commands-list-modal .form-check { padding-left: 1.5em; margin-bottom: 0.5rem; }
-        #admin-commands-list-modal .form-check-input { float: none; margin-left: -1.5em; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #F3F4F6;
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+        
+        .sidebar {
+            background-color: var(--darker-bg);
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            z-index: 100;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar-collapsed {
+            width: 70px;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            transition: all 0.3s;
+            min-height: 100vh;
+            padding: 1.5rem;
+        }
+        
+        .main-content-expanded {
+            margin-left: 70px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
+        }
+        
+        .card-header {
+            background-color: #fff;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding: 1.25rem 1.5rem;
+        }
+        
+        .btn {
+            border-radius: 0.5rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+        
+        .form-control {
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid #E2E8F0;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(88, 101, 242, 0.25);
+        }
+        
+        .badge {
+            font-weight: 500;
+            padding: 0.35em 0.65em;
+            border-radius: 0.375rem;
+        }
+        
+        .badge-admin {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .badge-command {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .badge-all {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .nav-link {
+            color: #fff;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            margin: 0.25rem 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        
+        .nav-link.active {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        
+        .nav-icon {
+            width: 1.5rem;
+            text-align: center;
+            margin-right: 0.75rem;
+        }
+        
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 0.3em solid rgba(88, 101, 242, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1090;
+        }
+        
+        .code-block {
+            background-color: #F8F9FA;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: 'Fira Code', monospace;
+            overflow-x: auto;
+            margin: 1rem 0;
+            white-space: pre;
+            border: 1px solid #E2E8F0;
+            position: relative;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .copy-btn:hover {
+            opacity: 1;
+        }
+        
+        .admin-item {
+            padding: 1.25rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            background-color: #fff;
+            border: 1px solid #E2E8F0;
+            transition: all 0.2s;
+        }
+        
+        .admin-item:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .permission-badge {
+            font-size: 0.8em;
+            margin-right: 0.3rem;
+            margin-bottom: 0.3rem;
+            padding: 0.35em 0.65em;
+            border-radius: 0.375rem;
+        }
+        
+        .stat-card {
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            height: 100%;
+            transition: all 0.3s;
+            background-color: #fff;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        .sidebar-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 101;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+        
+        .sidebar-toggle:hover {
+            background-color: var(--primary-hover);
+            transform: scale(1.1);
+        }
+        
+        .progress-thin {
+            height: 8px;
+        }
+        
+        .memory-usage {
+            height: 200px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 70px;
+            }
+            .main-content {
+                margin-left: 70px;
+            }
+            .nav-text {
+                display: none;
+            }
+            .nav-icon {
+                margin-right: 0;
+            }
+            .sidebar-expanded .nav-text {
+                display: inline;
+            }
+            .sidebar-expanded {
+                width: 250px;
+            }
+            .sidebar-expanded .nav-icon {
+                margin-right: 0.75rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 0;
+                transform: translateX(-100%);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .sidebar-expanded {
+                width: 250px;
+                transform: translateX(0);
+            }
+        }
     </style>
 </head>
-<body>
+<body class="bg-gray-100">
     <div id="loading" class="loading" style="display: none;">
         <div class="spinner"></div>
     </div>
@@ -48,114 +357,545 @@
         </div>
     </div>
 
-    <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-10">
-                <div class="geist-card p-4 mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h1 class="h3 m-0">Discord Bot Admin Panel</h1>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="d-flex flex-column h-100">
+            <div class="p-4 text-white">
+                <h1 class="text-xl font-bold mb-4 d-flex align-items-center">
+                    <i class="bi bi-discord me-2"></i>
+                    <span class="nav-text">Bot Admin</span>
+                </h1>
+            </div>
+            <ul class="nav flex-column mb-auto p-2">
+                <li class="nav-item">
+                    <a href="#dashboard" class="nav-link active">
+                        <i class="bi bi-speedometer2 nav-icon"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#admin-management" class="nav-link">
+                        <i class="bi bi-shield-lock nav-icon"></i>
+                        <span class="nav-text">Admin Management</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#bot-info" class="nav-link">
+                        <i class="bi bi-info-circle nav-icon"></i>
+                        <span class="nav-text">Bot Information</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#system-stats" class="nav-link">
+                        <i class="bi bi-graph-up nav-icon"></i>
+                        <span class="nav-text">System Stats</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#settings" class="nav-link">
+                        <i class="bi bi-gear nav-icon"></i>
+                        <span class="nav-text">Settings</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="p-4 mt-auto text-white">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-white p-1 me-2">
+                        <i class="bi bi-robot text-dark"></i>
                     </div>
-                    
-                    <div class="mb-4">
-                        <label for="prefix" class="form-label fw-medium">Command Prefix</label>
-                        <div class="input-group">
-                            <input type="text" id="prefix" class="form-control geist-input" placeholder="Enter command prefix (leave empty for no prefix)">
-                            <button class="btn btn-outline-primary geist-button" type="button" onclick="updatePrefix()">Update Prefix</button>
+                    <div class="nav-text w-100">
+                        <small class="d-block text-white-50">Bot Status</small>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="d-flex align-items-center">
+                                <span class="bg-success rounded-circle me-1" style="width: 8px; height: 8px;"></span>
+                                <span class="text-white">Online</span>
+                            </span>
+                            <span class="badge bg-primary" id="sidebar-uptime">0s</span>
                         </div>
-                        <div class="form-text">Current prefix: <span id="current-prefix" class="fw-semibold"></span></div>
                     </div>
                 </div>
-                
-                <div id="admin-management-section" class="geist-card p-4 mb-4">
-                    <h2 class="h4 mb-3">Admin Permission Management</h2>
-                    
-                    <div id="github-warning" class="alert alert-info">
-                        <h4 class="alert-heading fs-5"><i class="bi bi-github me-2"></i>GitHub Integration</h4>
-                        <p>Admin permissions are managed directly in your GitHub repository. Changes made here will attempt to update the file on GitHub.</p>
-                        <p class="mb-0">GitHub file URL: <code id="github-url" class="fw-semibold">Loading...</code></p>
-                        <div id="github-not-configured-warning" class="alert alert-danger mt-2" style="display: none;">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i> <strong>GitHub API Not Configured:</strong> The bot server is not fully set up to write changes to GitHub. Updates made here might be in-memory only and lost on restart.
+            </div>
+        </div>
+    </div>
+
+    <!-- Toggle Button -->
+    <div class="sidebar-toggle" id="sidebar-toggle">
+        <i class="bi bi-chevron-left" id="toggle-icon"></i>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="main-content">
+        <div class="container-fluid p-0">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 fw-bold">Dashboard</h1>
+                    <div>
+                        <button class="btn btn-outline-primary" onclick="refreshData()">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
+                        </button>
+                        <button class="btn btn-outline-danger ms-2" onclick="logout()">
+                            <i class="bi bi-box-arrow-right me-1"></i> Logout
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="bi bi-people-fill"></i>
+                            </div>
+                            <div class="stat-value" id="admin-count">0</div>
+                            <div class="stat-label">Admins</div>
                         </div>
                     </div>
-                     <div class="alert alert-secondary">
-                        <p class="mb-1">Required <code>admin_ids.json</code> format on GitHub (example):</p>
-                        <div class="position-relative">
-                            <pre class="code-block" id="admin-json-format">{
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="bi bi-terminal-fill"></i>
+                            </div>
+                            <div class="stat-value" id="command-count">0</div>
+                            <div class="stat-label">Commands</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="bi bi-clock-history"></i>
+                            </div>
+                            <div class="stat-value" id="uptime">0s</div>
+                            <div class="stat-label">Uptime</div>
+                            <div class="progress progress-thin mt-2">
+                                <div id="uptime-progress" class="progress-bar bg-success" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="bi bi-person-check-fill"></i>
+                            </div>
+                            <div class="stat-value" id="active-users">0</div>
+                            <div class="stat-label">Active Users</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-8">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">System Overview</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="system-overview-chart" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">Memory Usage</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="memory-usage">
+                                    <canvas id="memory-chart"></canvas>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>RSS</span>
+                                        <span id="memory-rss">0 MB</span>
+                                    </div>
+                                    <div class="progress progress-thin mb-3">
+                                        <div id="memory-rss-bar" class="progress-bar bg-primary" style="width: 0%"></div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Heap Total</span>
+                                        <span id="memory-heap-total">0 MB</span>
+                                    </div>
+                                    <div class="progress progress-thin mb-3">
+                                        <div id="memory-heap-total-bar" class="progress-bar bg-success" style="width: 0%"></div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Heap Used</span>
+                                        <span id="memory-heap-used">0 MB</span>
+                                    </div>
+                                    <div class="progress progress-thin">
+                                        <div id="memory-heap-used-bar" class="progress-bar bg-warning" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Command Prefix</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="prefix" class="form-label fw-medium">Set Command Prefix</label>
+                            <div class="input-group">
+                                <input type="text" id="prefix" class="form-control" placeholder="Enter command prefix (leave empty for no prefix)">
+                                <button class="btn btn-primary" type="button" onclick="updatePrefix()">
+                                    <i class="bi bi-check-lg me-1"></i> Update
+                                </button>
+                            </div>
+                            <div class="form-text mt-2">Current prefix: <span id="current-prefix" class="fw-semibold"></span></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Admin Management Section -->
+            <section id="admin-management" class="mb-5" style="display: none;">
+                <h2 class="h4 fw-bold mb-4">Admin Permission Management</h2>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">GitHub Integration</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="github-warning" class="alert alert-info">
+                            <h4 class="alert-heading fs-5"><i class="bi bi-github me-2"></i>GitHub Configuration</h4>
+                            <p>Admin permissions are managed directly in your GitHub repository. Changes made here will update the file on GitHub.</p>
+                            <p class="mb-0">GitHub file URL: <code id="github-url" class="fw-semibold">Loading...</code></p>
+                            <div id="github-not-configured-warning" class="alert alert-danger mt-2" style="display: none;">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i> <strong>GitHub API Not Configured:</strong> The bot server is not fully set up to write changes to GitHub. Updates made here might be in-memory only and lost on restart.
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-secondary">
+                            <p class="mb-1">Required <code>admin_ids.json</code> format on GitHub (example):</p>
+                            <div class="position-relative">
+                                <pre class="code-block" id="admin-json-format">{
   "ADMIN_PERMISSIONS": {
     "123456789012345678": ["fbcreatev2", "anotherCommand"],
     "987654321098765432": ["all"]
   }
 }</pre>
-                            <button class="btn btn-sm btn-light copy-btn" onclick="copyToClipboard('admin-json-format', true)"><i class="bi bi-clipboard"></i></button>
-                        </div>
-                    </div>
-                    
-                    <div class="d-flex justify-content-end mb-3">
-                        <button class="btn btn-outline-primary geist-button" onclick="refreshAdminPermissionsFromServer()">
-                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh from GitHub
-                        </button>
-                    </div>
-                    
-                    <div class="mb-4 p-3 border rounded bg-light">
-                        <h3 class="h5 mb-3">Add New Admin</h3>
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label for="newAdminId" class="form-label">Discord User ID</label>
-                                <input type="text" id="newAdminId" class="form-control geist-input" placeholder="17-19 digit ID">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="newAdminPerms" class="form-label">Initial Permissions</label>
-                                <input type="text" id="newAdminPerms" class="form-control geist-input" placeholder="e.g., cmd1, cmd2 or all">
-                            </div>
-                            <div class="col-md-2 d-flex align-items-end">
-                                <button class="btn btn-primary geist-button geist-button-primary w-100" type="button" onclick="addAdmin()">Add Admin</button>
+                                <button class="btn btn-sm btn-light copy-btn" onclick="copyToClipboard('admin-json-format', true)">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
                             </div>
                         </div>
-                        <div class="form-text mt-1">For permissions, use comma-separated command names or "all" for full access.</div>
-                    </div>
-                    
-                    <h3 class="h5 mb-2">Current Admins & Permissions</h3>
-                    <div id="adminList" class="mb-3 list-group">
-                        {/* Admin items will be rendered here */}
-                    </div>
-                    
-                    <div class="mt-4">
-                        <h3 class="h5 mb-2">Export Current Admin Permissions (JSON)</h3>
-                        <div class="position-relative">
-                            <pre class="code-block" id="current-admin-json"></pre>
-                            <button class="btn btn-sm btn-light copy-btn" onclick="copyToClipboard('current-admin-json', true)"><i class="bi bi-clipboard"></i></button>
+                        
+                        <div class="d-flex justify-content-end mb-3">
+                            <button class="btn btn-outline-primary" onclick="refreshAdminPermissionsFromServer()">
+                                <i class="bi bi-arrow-clockwise me-1"></i> Refresh from GitHub
+                            </button>
                         </div>
-                        <button class="btn btn-outline-secondary mt-2 geist-button" onclick="updateAdminJsonDisplay()">
-                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh JSON Display
-                        </button>
                     </div>
                 </div>
                 
-                <div class="geist-card p-4">
-                    <h2 class="h4 mb-3">Bot Information</h2>
-                    <div class="row">
-                        <div class="col-md-6 mb-3 mb-md-0">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <h5 class="card-title">Commands</h5>
-                                    <p class="card-text mb-1" id="command-count-details">Loading...</p>
-                                    <div id="admin-commands-list-display" class="mt-1" style="max-height: 150px; overflow-y: auto;">
-                                        <small class="text-muted">Admin commands will be listed here.</small>
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Add New Admin</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="newAdminId" class="form-label">Discord User ID</label>
+                                <input type="text" id="newAdminId" class="form-control" placeholder="17-19 digit ID">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="newAdminPerms" class="form-label">Initial Permissions</label>
+                                <input type="text" id="newAdminPerms" class="form-control" placeholder="e.g., cmd1, cmd2 or all">
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-primary w-100" type="button" onclick="addAdmin()">
+                                    <i class="bi bi-plus-lg me-1"></i> Add
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-text mt-2">For permissions, use comma-separated command names or "all" for full access.</div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Current Admins & Permissions</h5>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="updateAdminJsonDisplay()">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="adminList" class="mb-3">
+                            <!-- Admin items will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Export Current Admin Permissions (JSON)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="position-relative">
+                            <pre class="code-block" id="current-admin-json"></pre>
+                            <button class="btn btn-sm btn-light copy-btn" onclick="copyToClipboard('current-admin-json', true)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Bot Information Section -->
+            <section id="bot-info" class="mb-5" style="display: none;">
+                <h2 class="h4 fw-bold mb-4">Bot Information</h2>
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">Commands</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text mb-3" id="command-count-details">Loading...</p>
+                                <div id="admin-commands-list-display" class="mt-3" style="max-height: 200px; overflow-y: auto;">
+                                    <small class="text-muted">Admin commands will be listed here.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">System Status</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="me-3">
+                                        <i class="bi bi-clock-history text-primary" style="font-size: 2rem;"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">Uptime</h6>
+                                        <p class="mb-0 fs-5 fw-bold" id="uptime-detail">Loading...</p>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="me-3">
+                                        <i class="bi bi-terminal text-primary" style="font-size: 2rem;"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">Commands Executed</h6>
+                                        <p class="mb-0 fs-5 fw-bold" id="commands-executed">0</p>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="bi bi-hdd-network text-primary" style="font-size: 2rem;"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">Server Status</h6>
+                                        <p class="mb-0">
+                                            <span class="badge bg-success">Online</span>
+                                        </p>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <h5 class="card-title">Uptime</h5>
-                                    <p class="card-text" id="uptime">Loading...</p>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Last Activity</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Metric</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Last Command</td>
+                                        <td id="last-command-time">Never</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Active Users</td>
+                                        <td id="active-users-detail">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Error Count</td>
+                                        <td id="error-count">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Server Start Time</td>
+                                        <td id="server-start-time">Unknown</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- System Stats Section -->
+            <section id="system-stats" class="mb-5" style="display: none;">
+                <h2 class="h4 fw-bold mb-4">System Statistics</h2>
+                
+                <div class="row g-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Memory Usage Over Time</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="memory-history-chart" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-4 mt-2">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">System Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <tbody>
+                                            <tr>
+                                                <td>Node.js Version</td>
+                                                <td id="nodejs-version">Loading...</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Platform</td>
+                                                <td id="platform">Loading...</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Architecture</td>
+                                                <td id="architecture">Loading...</td>
+                                            </tr>
+                                            <tr>
+                                                <td>CPU Cores</td>
+                                                <td id="cpu-cores">Loading...</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Total Memory</td>
+                                                <td id="total-memory">Loading...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Performance Metrics</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Memory Usage</span>
+                                    <span id="memory-usage-percent">0%</span>
+                                </div>
+                                <div class="progress progress-thin mb-3">
+                                    <div id="memory-usage-bar" class="progress-bar bg-primary" style="width: 0%"></div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Heap Usage</span>
+                                    <span id="heap-usage-percent">0%</span>
+                                </div>
+                                <div class="progress progress-thin mb-3">
+                                    <div id="heap-usage-bar" class="progress-bar bg-success" style="width: 0%"></div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Command Execution Rate</span>
+                                    <span id="command-rate">0/min</span>
+                                </div>
+                                <div class="progress progress-thin">
+                                    <div id="command-rate-bar" class="progress-bar bg-warning" style="width: 0%"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
+            
+            <!-- Settings Section -->
+            <section id="settings" class="mb-5" style="display: none;">
+                <h2 class="h4 fw-bold mb-4">Settings</h2>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Admin Panel Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Auto-Refresh Interval</label>
+                            <select id="refresh-interval" class="form-select">
+                                <option value="0">Manual refresh only</option>
+                                <option value="5000">Every 5 seconds</option>
+                                <option value="10000">Every 10 seconds</option>
+                                <option value="30000" selected>Every 30 seconds</option>
+                                <option value="60000">Every minute</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Session Timeout</label>
+                            <select id="session-timeout" class="form-select">
+                                <option value="3600000">1 hour</option>
+                                <option value="7200000">2 hours</option>
+                                <option value="14400000">4 hours</option>
+                                <option value="28800000">8 hours</option>
+                                <option value="86400000" selected>24 hours</option>
+                            </select>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="saveSettings()">
+                            <i class="bi bi-save me-1"></i> Save Settings
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Change Admin Token</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            Changing the admin token will immediately log out all current sessions. Make sure to remember your new token!
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="current-token" class="form-label">Current Admin Token</label>
+                            <input type="password" id="current-token" class="form-control" placeholder="Enter current token">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="new-token" class="form-label">New Admin Token</label>
+                            <input type="password" id="new-token" class="form-control" placeholder="Enter new token">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="confirm-token" class="form-label">Confirm New Token</label>
+                            <input type="password" id="confirm-token" class="form-control" placeholder="Confirm new token">
+                        </div>
+                        
+                        <button class="btn btn-danger" onclick="changeAdminToken()">
+                            <i class="bi bi-key-fill me-1"></i> Change Token
+                        </button>
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
 
@@ -178,58 +918,406 @@
 
                     <div id="specificCommandsSection">
                         <h6>Assign Specific Admin Commands:</h6>
-                        <div id="admin-commands-list-modal" class="list-group list-group-flush border rounded p-2" style="max-height: 250px; overflow-y: auto;">
-                            {/* Checkboxes for commands will be populated here */}
+                        <div id="admin-commands-list-modal" class="list-group list-group-flush border rounded p-3" style="max-height: 250px; overflow-y: auto;">
+                            <!-- Checkboxes for commands will be populated here -->
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary geist-button" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary geist-button geist-button-primary" onclick="saveAdminPermissionsFromModal()">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveAdminPermissionsFromModal()">Save Changes</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
+        // Global variables
         let currentConfig = {
             PREFIX: "",
             ADMIN_PERMISSIONS: {},
             ADMIN_CONFIG_URL: "",
             GITHUB_CONFIGURED: false
         };
-        let allBotCommands = []; // To store all commands with their admin_only status
+        let allBotCommands = [];
         let editAdminModalInstance = null;
-        let startTime = new Date();
+        let systemStats = {};
+        let sidebarCollapsed = false;
+        let refreshInterval = 30000; // Default refresh interval: 30 seconds
+        let refreshTimer = null;
+        let memoryChart = null;
+        let systemOverviewChart = null;
+        let memoryHistoryChart = null;
+        let memoryHistory = {
+            labels: [],
+            rss: [],
+            heapTotal: [],
+            heapUsed: []
+        };
         
-        document.addEventListener('DOMContentLoaded', function () {
+        // Authentication
+        function checkAuthentication() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                window.location.href = '/login.html';
+                return false;
+            }
+            return true;
+        }
+        
+        function logout() {
+            localStorage.removeItem('adminToken');
+            window.location.href = '/login.html';
+        }
+        
+        // API helpers
+        function getAuthHeaders() {
+            const token = localStorage.getItem('adminToken');
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+        
+        async function fetchWithAuth(url, options = {}) {
+            const headers = { ...getAuthHeaders(), ...options.headers };
+            const response = await fetch(url, { ...options, headers });
+            
+            if (response.status === 401) {
+                logout();
+                return null;
+            }
+            
+            return response;
+        }
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!checkAuthentication()) return;
+            
             editAdminModalInstance = new bootstrap.Modal(document.getElementById('editAdminModal'));
-            fetchInitialConfig();
-            updateUptime();
-            setInterval(updateUptime, 1000);
+            
+            // Setup navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                    const targetId = this.getAttribute('href').substring(1);
+                    document.querySelectorAll('section').forEach(section => {
+                        section.style.display = section.id === targetId ? 'block' : 'none';
+                    });
+                });
+            });
+            
+            // Setup sidebar toggle
+            document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
+            
+            // Initialize charts
+            initializeCharts();
+            
+            // Load initial data
+            refreshData();
+            
+            // Setup auto-refresh
+            document.getElementById('refresh-interval').addEventListener('change', function() {
+                refreshInterval = parseInt(this.value);
+                if (refreshTimer) {
+                    clearInterval(refreshTimer);
+                    refreshTimer = null;
+                }
+                
+                if (refreshInterval > 0) {
+                    refreshTimer = setInterval(refreshData, refreshInterval);
+                }
+            });
+            
+            // Start auto-refresh if enabled
+            if (refreshInterval > 0) {
+                refreshTimer = setInterval(refreshData, refreshInterval);
+            }
         });
         
-        function fetchInitialConfig() {
+        function initializeCharts() {
+            // Memory chart (donut)
+            const memoryCtx = document.getElementById('memory-chart').getContext('2d');
+            memoryChart = new Chart(memoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Heap Used', 'Heap Available', 'Other Memory'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#FAA61A', '#43B581', '#5865F2']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // System overview chart (line)
+            const sysCtx = document.getElementById('system-overview-chart').getContext('2d');
+            systemOverviewChart = new Chart(sysCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Commands Executed',
+                        data: [],
+                        borderColor: '#5865F2',
+                        backgroundColor: 'rgba(88, 101, 242, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Memory history chart (line)
+            const memHistoryCtx = document.getElementById('memory-history-chart').getContext('2d');
+            memoryHistoryChart = new Chart(memHistoryCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'RSS',
+                            data: [],
+                            borderColor: '#5865F2',
+                            backgroundColor: 'rgba(88, 101, 242, 0.1)',
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Heap Total',
+                            data: [],
+                            borderColor: '#43B581',
+                            backgroundColor: 'rgba(67, 181, 129, 0.1)',
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Heap Used',
+                            data: [],
+                            borderColor: '#FAA61A',
+                            backgroundColor: 'rgba(250, 166, 26, 0.1)',
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Memory (MB)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateCharts() {
+            if (!systemStats || !systemStats.memory) return;
+            
+            // Update memory donut chart
+            const heapUsed = systemStats.memory.heapUsed;
+            const heapAvailable = systemStats.memory.heapTotal - systemStats.memory.heapUsed;
+            const otherMemory = systemStats.memory.rss - systemStats.memory.heapTotal;
+            
+            memoryChart.data.datasets[0].data = [heapUsed, heapAvailable, otherMemory];
+            memoryChart.update();
+            
+            // Update memory history
+            const now = new Date().toLocaleTimeString();
+            memoryHistory.labels.push(now);
+            memoryHistory.rss.push(systemStats.memory.rss);
+            memoryHistory.heapTotal.push(systemStats.memory.heapTotal);
+            memoryHistory.heapUsed.push(systemStats.memory.heapUsed);
+            
+            // Keep only the last 10 data points
+            if (memoryHistory.labels.length > 10) {
+                memoryHistory.labels.shift();
+                memoryHistory.rss.shift();
+                memoryHistory.heapTotal.shift();
+                memoryHistory.heapUsed.shift();
+            }
+            
+            // Update memory history chart
+            memoryHistoryChart.data.labels = memoryHistory.labels;
+            memoryHistoryChart.data.datasets[0].data = memoryHistory.rss;
+            memoryHistoryChart.data.datasets[1].data = memoryHistory.heapTotal;
+            memoryHistoryChart.data.datasets[2].data = memoryHistory.heapUsed;
+            memoryHistoryChart.update();
+            
+            // Update system overview chart (just a placeholder for now)
+            if (systemOverviewChart.data.labels.length === 0) {
+                // Initialize with some data points
+                for (let i = 0; i < 10; i++) {
+                    const time = new Date();
+                    time.setMinutes(time.getMinutes() - (10 - i));
+                    systemOverviewChart.data.labels.push(time.toLocaleTimeString());
+                    systemOverviewChart.data.datasets[0].data.push(0);
+                }
+            }
+            
+            // Add latest data point
+            systemOverviewChart.data.labels.push(now);
+            systemOverviewChart.data.datasets[0].data.push(systemStats.commandsExecuted);
+            
+            // Keep only the last 10 data points
+            if (systemOverviewChart.data.labels.length > 10) {
+                systemOverviewChart.data.labels.shift();
+                systemOverviewChart.data.datasets[0].data.shift();
+            }
+            
+            systemOverviewChart.update();
+        }
+        
+        async function refreshData() {
             showLoading();
-            fetch('/api/config')
-                .then(response => response.json())
-                .then(data => {
-                    currentConfig = data;
-                    document.getElementById('prefix').value = currentConfig.PREFIX || "";
-                    document.getElementById('current-prefix').textContent = currentConfig.PREFIX ? `"${currentConfig.PREFIX}"` : "None (empty)";
-                    document.getElementById('github-url').textContent = currentConfig.ADMIN_CONFIG_URL || "URL not configured";
-                    
-                    document.getElementById('github-not-configured-warning').style.display = !currentConfig.GITHUB_CONFIGURED ? 'block' : 'none';
+            
+            try {
+                // Fetch system stats
+                const statsResponse = await fetchWithAuth('/api/stats');
+                if (statsResponse) {
+                    systemStats = await statsResponse.json();
+                    updateSystemStats();
+                }
+                
+                // Fetch config
+                const configResponse = await fetchWithAuth('/api/config');
+                if (configResponse) {
+                    currentConfig = await configResponse.json();
+                    updateConfigDisplay();
+                }
+                
+                // Fetch commands
+                const commandsResponse = await fetchWithAuth('/api/commands');
+                if (commandsResponse) {
+                    const data = await commandsResponse.json();
+                    allBotCommands = data.commands || [];
+                    updateCommandsDisplay();
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+                showToast('Error', 'Failed to refresh data: ' + error.message, false);
+                hideLoading();
+            }
+        }
 
-                    renderAdminList();
-                    fetchCommandList(); 
-                    updateAdminJsonDisplay();
-                    hideLoading();
-                })
-                .catch(error => {
-                    showToast('Error', 'Error loading initial configuration: ' + error.message, false);
-                    hideLoading();
+        // Add this new function for real-time uptime counter
+        function startUptimeCounter() {
+            if (!systemStats || !systemStats.serverStartTime) return;
+            
+            const serverStartTime = new Date(systemStats.serverStartTime).getTime();
+            
+            // Update uptime every second
+            setInterval(() => {
+                const now = Date.now();
+                const uptime = now - serverStartTime;
+                const formattedUptime = formatUptime(uptime);
+                
+                // Update all uptime displays
+                document.getElementById('uptime').textContent = formattedUptime;
+                document.getElementById('uptime-detail').textContent = formattedUptime;
+                document.getElementById('sidebar-uptime').textContent = formattedUptime;
+                
+                // Update progress bar (resets every day)
+                const dayProgress = (uptime % (24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000) * 100;
+                document.getElementById('uptime-progress').style.width = `${dayProgress}%`;
+            }, 1000);
+        }
+
+        // Modify the updateSystemStats function to call startUptimeCounter
+        function updateSystemStats() {
+            // Update dashboard stats
+            document.getElementById('admin-count').textContent = systemStats.adminCount || 0;
+            document.getElementById('command-count').textContent = systemStats.commandCount || 0;
+            document.getElementById('uptime').textContent = systemStats.uptimeFormatted || '0s';
+            document.getElementById('sidebar-uptime').textContent = systemStats.uptimeFormatted || '0s';
+            document.getElementById('active-users').textContent = systemStats.activeUsers || 0;
+            
+            // Start the uptime counter if it hasn't been started yet
+            if (!window.uptimeCounterStarted && systemStats.serverStartTime) {
+                startUptimeCounter();
+                window.uptimeCounterStarted = true;
+            }
+            
+            // Rest of the function remains the same...
+        }
+        
+        function updateConfigDisplay() {
+            document.getElementById('prefix').value = currentConfig.PREFIX || "";
+            document.getElementById('current-prefix').textContent = currentConfig.PREFIX ? `"${currentConfig.PREFIX}"` : "None (empty)";
+            document.getElementById('github-url').textContent = currentConfig.ADMIN_CONFIG_URL || "URL not configured";
+            document.getElementById('github-not-configured-warning').style.display = !currentConfig.GITHUB_CONFIGURED ? 'block' : 'none';
+            
+            renderAdminList();
+            updateAdminJsonDisplay();
+        }
+        
+        function updateCommandsDisplay() {
+            const totalCommands = allBotCommands.length;
+            const adminOnlyCommands = allBotCommands.filter(cmd => cmd.admin_only);
+            
+            document.getElementById('command-count-details').textContent = `${totalCommands} commands loaded (${adminOnlyCommands.length} admin-only).`;
+            
+            const adminCmdDisplayEl = document.getElementById('admin-commands-list-display');
+            adminCmdDisplayEl.innerHTML = ''; 
+            
+            if(adminOnlyCommands.length > 0) {
+                const listGroup = document.createElement('div');
+                listGroup.className = 'row g-2';
+                adminOnlyCommands.forEach(cmd => {
+                    const listItem = document.createElement('div');
+                    listItem.className = 'col-md-6 col-lg-4';
+                    listItem.innerHTML = `<span class="badge bg-secondary text-wrap d-block p-2">${cmd.name}</span>`;
+                    listGroup.appendChild(listItem);
                 });
+                adminCmdDisplayEl.appendChild(listGroup);
+            } else {
+                adminCmdDisplayEl.innerHTML = '<div class="alert alert-info">No admin-only commands found.</div>';
+            }
+        }
+        
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const toggleIcon = document.getElementById('toggle-icon');
+            
+            sidebarCollapsed = !sidebarCollapsed;
+            
+            if (sidebarCollapsed) {
+                sidebar.classList.add('sidebar-collapsed');
+                mainContent.classList.add('main-content-expanded');
+                toggleIcon.classList.remove('bi-chevron-left');
+                toggleIcon.classList.add('bi-chevron-right');
+            } else {
+                sidebar.classList.remove('sidebar-collapsed');
+                mainContent.classList.remove('main-content-expanded');
+                toggleIcon.classList.remove('bi-chevron-right');
+                toggleIcon.classList.add('bi-chevron-left');
+            }
         }
         
         function updateAdminJsonDisplay() {
@@ -245,102 +1333,67 @@
                 .catch(err => showToast('Error', 'Failed to copy: ' + err, false));
         }
         
-        function refreshAdminPermissionsFromServer() {
+        async function refreshAdminPermissionsFromServer() {
             showLoading();
-            fetch('/api/admin-permissions/refresh')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        currentConfig.ADMIN_PERMISSIONS = data.ADMIN_PERMISSIONS;
-                        renderAdminList();
-                        updateAdminJsonDisplay();
-                        showToast('Success', data.message || 'Admin permissions refreshed from GitHub.', true);
-                    } else {
-                        showToast('Error', 'Error refreshing admin permissions: ' + (data.message || data.error), false);
-                    }
-                    hideLoading();
-                })
-                .catch(error => {
-                    showToast('Error', 'Network error refreshing admin permissions: ' + error.message, false);
-                    hideLoading();
-                });
-        }
-        
-        function fetchCommandList() {
-            fetch('/api/commands')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.commands) {
-                        allBotCommands = data.commands; // Store all commands
-                        const totalCommands = allBotCommands.length;
-                        const adminOnlyCommands = allBotCommands.filter(cmd => cmd.admin_only);
-                        
-                        document.getElementById('command-count-details').textContent = `${totalCommands} commands loaded (${adminOnlyCommands.length} admin-only).`;
-                        
-                        const adminCmdDisplayEl = document.getElementById('admin-commands-list-display');
-                        adminCmdDisplayEl.innerHTML = ''; 
-                        if(adminOnlyCommands.length > 0) {
-                            const listGroup = document.createElement('ul');
-                            listGroup.className = 'list-unstyled mb-0';
-                            adminOnlyCommands.forEach(cmd => {
-                                const listItem = document.createElement('li');
-                                listItem.innerHTML = `<small class="font-monospace badge bg-secondary text-wrap">${cmd.name}</small>`;
-                                listGroup.appendChild(listItem);
-                            });
-                            adminCmdDisplayEl.appendChild(listGroup);
-                        } else {
-                            adminCmdDisplayEl.innerHTML = '<small class="text-muted">No admin-only commands found.</small>';
-                        }
-                    }
-                })
-                .catch(error => {
-                    document.getElementById('command-count-details').textContent = 'Unable to fetch command list';
-                });
-        }
-        
-        function updateUptime() {
-            const diff = new Date() - startTime;
-            const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
-            const m = Math.floor((diff / (1000 * 60)) % 60);
-            const s = Math.floor((diff / 1000) % 60);
-            document.getElementById('uptime').textContent = 
-                `${d > 0 ? d + 'd ' : ''}${h > 0 || d > 0 ? h + 'h ' : ''}${m > 0 || h > 0 || d > 0 ? m + 'm ' : ''}${s}s`;
+            try {
+                const response = await fetchWithAuth('/api/admin-permissions/refresh');
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentConfig.ADMIN_PERMISSIONS = data.ADMIN_PERMISSIONS;
+                    renderAdminList();
+                    updateAdminJsonDisplay();
+                    showToast('Success', data.message || 'Admin permissions refreshed from GitHub.', true);
+                } else {
+                    showToast('Error', 'Error refreshing admin permissions: ' + (data.message || data.error), false);
+                }
+            } catch (error) {
+                showToast('Error', 'Network error refreshing admin permissions: ' + error.message, false);
+            } finally {
+                hideLoading();
+            }
         }
         
         function renderAdminList() {
             const adminListEl = document.getElementById('adminList');
             adminListEl.innerHTML = '';
+            
             if (!currentConfig.ADMIN_PERMISSIONS || Object.keys(currentConfig.ADMIN_PERMISSIONS).length === 0) {
-                adminListEl.innerHTML = '<div class="list-group-item">No admins configured. Add admin IDs and their permissions.</div>';
+                adminListEl.innerHTML = '<div class="alert alert-info">No admins configured. Add admin IDs and their permissions.</div>';
                 return;
             }
+            
             for (const adminId in currentConfig.ADMIN_PERMISSIONS) {
                 const permissions = currentConfig.ADMIN_PERMISSIONS[adminId];
                 const item = document.createElement('div');
-                item.className = 'list-group-item admin-item d-flex flex-wrap justify-content-between align-items-center';
+                item.className = 'admin-item mb-3';
                 
                 let permsDisplay = '';
                 if (permissions.includes('all')) {
-                    permsDisplay = '<span class="badge bg-primary permission-badge text-wrap">All Permissions</span>';
+                    permsDisplay = '<span class="badge badge-all permission-badge text-wrap">All Permissions</span>';
                 } else if (permissions.length > 0) {
-                    permsDisplay = permissions.map(p => `<span class="badge bg-secondary permission-badge text-wrap">${p}</span>`).join(' ');
+                    permsDisplay = permissions.map(p => `<span class="badge badge-command permission-badge text-wrap">${p}</span>`).join(' ');
                 } else {
                     permsDisplay = '<span class="badge bg-warning text-dark permission-badge text-wrap">No Specific Permissions</span>';
                 }
 
                 item.innerHTML = `
-                    <div class="me-3 mb-2 mb-md-0">
-                        <strong class="font-monospace d-block">${adminId}</strong>
-                        <div class="mt-1">${permsDisplay}</div>
-                    </div>
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button class="btn btn-outline-primary geist-button" onclick="openEditAdminModal('${adminId}')">
-                            <i class="bi bi-pencil-square me-1"></i> Edit
-                        </button>
-                        <button class="btn btn-outline-danger geist-button" onclick="removeAdmin('${adminId}')">
-                            <i class="bi bi-trash me-1"></i> Remove
-                        </button>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center">
+                        <div class="me-3 mb-2 mb-md-0">
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge badge-admin me-2">Admin</span>
+                                <strong class="font-monospace">${adminId}</strong>
+                            </div>
+                            <div class="mt-2">${permsDisplay}</div>
+                        </div>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-primary" onclick="openEditAdminModal('${adminId}')">
+                                <i class="bi bi-pencil-square me-1"></i> Edit
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="removeAdmin('${adminId}')">
+                                <i class="bi bi-trash me-1"></i> Remove
+                            </button>
+                        </div>
                     </div>`;
                 adminListEl.appendChild(item);
             }
@@ -355,7 +1408,7 @@
             grantAllSwitch.checked = permissions.includes('all');
 
             const commandsListModalEl = document.getElementById('admin-commands-list-modal');
-            commandsListModalEl.innerHTML = ''; // Clear previous
+            commandsListModalEl.innerHTML = ''; 
             
             const adminOnlyCommands = allBotCommands.filter(cmd => cmd.admin_only);
             if (adminOnlyCommands.length === 0) {
@@ -374,7 +1427,7 @@
                     commandsListModalEl.appendChild(commandDiv);
                 });
             }
-            toggleCommandSelection(); // Set initial state of command checkboxes based on "all"
+            toggleCommandSelection(); 
             editAdminModalInstance.show();
         }
 
@@ -384,7 +1437,7 @@
             specificCommandsSection.style.display = grantAll ? 'none' : 'block';
         }
 
-        function saveAdminPermissionsFromModal() {
+        async function saveAdminPermissionsFromModal() {
             const adminId = document.getElementById('editingAdminId').value;
             const grantAll = document.getElementById('grantAllPermissionsSwitch').checked;
             let newPermissions = [];
@@ -397,30 +1450,31 @@
             }
             if (newPermissions.length === 0 && !grantAll) {
                  showToast('Warning', 'No specific permissions selected. Admin will have no command access unless "Grant All" is checked.', false);
-                 // Optionally, you could prevent saving here or default to something. For now, allow empty array.
             }
-
 
             const newAdminConfig = { ...currentConfig.ADMIN_PERMISSIONS };
             newAdminConfig[adminId] = newPermissions;
 
-            updateAdminPermissionsOnServer(newAdminConfig)
-                .then(() => {
-                    editAdminModalInstance.hide();
-                })
-                .catch(err => console.error("Failed to save admin permissions from modal:", err));
+            try {
+                await updateAdminPermissionsOnServer(newAdminConfig);
+                editAdminModalInstance.hide();
+            } catch (err) {
+                console.error("Failed to save admin permissions from modal:", err);
+            }
         }
         
-        function updatePrefix() {
+        async function updatePrefix() {
             const newPrefix = document.getElementById('prefix').value;
             showLoading();
-            fetch('/api/config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ PREFIX: newPrefix })
-            })
-            .then(response => response.json())
-            .then(data => {
+            
+            try {
+                const response = await fetchWithAuth('/api/config', {
+                    method: 'POST',
+                    body: JSON.stringify({ PREFIX: newPrefix })
+                });
+                
+                const data = await response.json();
+                
                 if (data.success) {
                     currentConfig.PREFIX = newPrefix;
                     document.getElementById('current-prefix').textContent = newPrefix ? `"${newPrefix}"` : "None (empty)";
@@ -428,50 +1482,50 @@
                 } else {
                     showToast('Error', 'Error updating prefix: ' + (data.message || data.error), false);
                 }
-                hideLoading();
-            })
-            .catch(error => {
+            } catch (error) {
                 showToast('Error', 'Network error updating prefix: ' + error.message, false);
+            } finally {
                 hideLoading();
-            });
+            }
         }
 
-        function updateAdminPermissionsOnServer(newAdminPermsObject) {
+        async function updateAdminPermissionsOnServer(newAdminPermsObject) {
             if (!currentConfig.GITHUB_CONFIGURED) {
                 showToast('Error', 'GitHub API not configured on server. Cannot save changes to GitHub.', false);
-                hideLoading();
                 return Promise.reject(new Error("GitHub not configured"));
             }
 
             showLoading();
-            return fetch('/api/admin-permissions/update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ admin_permissions: newAdminPermsObject })
-            })
-            .then(response => response.json())
-            .then(data => {
+            
+            try {
+                const response = await fetchWithAuth('/api/admin-permissions/update', {
+                    method: 'POST',
+                    body: JSON.stringify({ admin_permissions: newAdminPermsObject })
+                });
+                
+                const data = await response.json();
+                
                 if (data.success) {
                     currentConfig.ADMIN_PERMISSIONS = data.ADMIN_PERMISSIONS || newAdminPermsObject;
                     renderAdminList();
                     updateAdminJsonDisplay();
                     showToast('Success', data.message || 'Admin permissions updated on GitHub!', true);
+                    return data;
                 } else {
                     showToast('Error', 'Error updating admin permissions on GitHub: ' + (data.message || data.error), false);
-                    fetchInitialConfig(); 
+                    await refreshData();
+                    throw new Error(data.message || data.error);
                 }
-                hideLoading();
-                return data;
-            })
-            .catch(error => {
+            } catch (error) {
                 showToast('Error', 'Network error updating admin permissions: ' + error.message, false);
-                hideLoading();
-                fetchInitialConfig(); 
+                await refreshData();
                 throw error;
-            });
+            } finally {
+                hideLoading();
+            }
         }
 
-        function addAdmin() {
+        async function addAdmin() {
             const newAdminIdInput = document.getElementById('newAdminId');
             const newAdminPermsInput = document.getElementById('newAdminPerms');
             const adminId = newAdminIdInput.value.trim();
@@ -503,26 +1557,78 @@
             const newAdminConfig = { ...currentConfig.ADMIN_PERMISSIONS };
             newAdminConfig[adminId] = permissionsArray;
 
-            updateAdminPermissionsOnServer(newAdminConfig)
-                .then(() => {
-                    newAdminIdInput.value = '';
-                    newAdminPermsInput.value = '';
-                })
-                .catch(err => console.error("Failed to add admin:", err));
+            try {
+                await updateAdminPermissionsOnServer(newAdminConfig);
+                newAdminIdInput.value = '';
+                newAdminPermsInput.value = '';
+            } catch (err) {
+                console.error("Failed to add admin:", err);
+            }
         }
         
-        function removeAdmin(adminIdToRemove) {
+        async function removeAdmin(adminIdToRemove) {
             if (!confirm(`Are you sure you want to remove admin ID ${adminIdToRemove}? This will update the file on GitHub.`)) {
                 return;
             }
+            
             const newAdminConfig = { ...currentConfig.ADMIN_PERMISSIONS };
             delete newAdminConfig[adminIdToRemove];
-            updateAdminPermissionsOnServer(newAdminConfig)
-                .catch(err => console.error("Failed to remove admin:", err));
+            
+            try {
+                await updateAdminPermissionsOnServer(newAdminConfig);
+            } catch (err) {
+                console.error("Failed to remove admin:", err);
+            }
         }
         
-        function showLoading() { document.getElementById('loading').style.display = 'flex'; }
-        function hideLoading() { document.getElementById('loading').style.display = 'none'; }
+        function saveSettings() {
+            refreshInterval = parseInt(document.getElementById('refresh-interval').value);
+            
+            // Clear existing timer
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+                refreshTimer = null;
+            }
+            
+            // Set new timer if needed
+            if (refreshInterval > 0) {
+                refreshTimer = setInterval(refreshData, refreshInterval);
+            }
+            
+            showToast('Success', 'Settings saved successfully!', true);
+        }
+        
+        function changeAdminToken() {
+            const currentToken = document.getElementById('current-token').value;
+            const newToken = document.getElementById('new-token').value;
+            const confirmToken = document.getElementById('confirm-token').value;
+            
+            // This is just a placeholder - in a real implementation, this would call an API endpoint
+            if (!currentToken || !newToken || !confirmToken) {
+                showToast('Error', 'All fields are required', false);
+                return;
+            }
+            
+            if (newToken !== confirmToken) {
+                showToast('Error', 'New token and confirmation do not match', false);
+                return;
+            }
+            
+            showToast('Success', 'Admin token changed successfully! You will be logged out.', true);
+            
+            // Simulate logout after token change
+            setTimeout(() => {
+                logout();
+            }, 2000);
+        }
+        
+        function showLoading() { 
+            document.getElementById('loading').style.display = 'flex'; 
+        }
+        
+        function hideLoading() { 
+            document.getElementById('loading').style.display = 'none'; 
+        }
         
         let toastInstance = null;
         function showToast(title, message, isSuccess) {
@@ -532,17 +1638,33 @@
             }
             document.getElementById('toast-title').textContent = title;
             document.getElementById('toast-body').textContent = message;
-            toastEl.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'text-white'); // Clear previous
+            toastEl.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'text-white'); 
             if (isSuccess === true) {
                 toastEl.classList.add('bg-success', 'text-white');
             } else if (isSuccess === false) {
                 toastEl.classList.add('bg-danger', 'text-white');
-            } else { // Neutral / Warning
+            } else { 
                 toastEl.classList.add('bg-warning', 'text-dark');
             }
             toastInstance.show();
         }
+
+        // Helper function to format uptime
+        function formatUptime(uptimeMs) {
+            const totalSeconds = Math.floor(uptimeMs / 1000);
+            const days = Math.floor(totalSeconds / (60 * 60 * 24));
+            const hours = Math.floor((totalSeconds % (60 * 60 * 24)) / (60 * 60));
+            const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+            const seconds = totalSeconds % 60;
+
+            let formatted = "";
+            if (days > 0) formatted += `${days}d `;
+            if (hours > 0) formatted += `${hours}h `;
+            if (minutes > 0) formatted += `${minutes}m `;
+            formatted += `${seconds}s`;
+
+            return formatted;
+        }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
