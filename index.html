@@ -6,6 +6,8 @@
     <title>Discord Bot Admin Panel</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Geist UI inspired styles -->
@@ -125,6 +127,31 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        .code-block {
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            padding: 1rem;
+            font-family: monospace;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .copy-btn:hover {
+            background-color: #e0e0e0;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -163,19 +190,37 @@
                 <div class="geist-card bg-white p-4 mb-4">
                     <h2 class="text-xl font-bold text-gray-800 mb-3">Admin Management</h2>
                     
-                    <div class="alert alert-info">
-                        <p><strong>Note:</strong> Admin IDs are now stored in a GitHub file.</p>
-                        <p>Changes made here are temporary and will be reset if the bot restarts. To make permanent changes, update your GitHub file.</p>
+                    <div class="alert alert-warning">
+                        <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>Important Note</h4>
+                        <p>Admin IDs are loaded from GitHub. Changes made here are <strong>temporary</strong> and will be lost when the bot restarts.</p>
+                        <hr>
+                        <p class="mb-0">To make permanent changes, you need to update your GitHub file at:</p>
+                        <div class="position-relative mt-2">
+                            <div class="code-block" id="github-url">Loading GitHub URL...</div>
+                            <button class="copy-btn" onclick="copyToClipboard('github-url')">Copy</button>
+                        </div>
+                        <p class="mt-2">Update your admin_ids.json file with this format:</p>
+                        <div class="position-relative">
+                            <div class="code-block" id="admin-json-format">
+{
+  "ADMIN_IDS": [
+    "123456789012345678",
+    "987654321098765432"
+  ]
+}
+                            </div>
+                            <button class="copy-btn" onclick="copyToClipboard('admin-json-format')">Copy</button>
+                        </div>
                     </div>
                     
                     <div class="d-flex justify-content-end mb-3">
                         <button class="btn btn-outline-primary" onclick="refreshAdminIDs()">
-                            <i class="bi bi-arrow-clockwise"></i> Refresh from GitHub
+                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh from GitHub
                         </button>
                     </div>
                     
                     <div class="mb-4">
-                        <label for="newAdmin" class="form-label font-medium text-gray-700">Add Admin</label>
+                        <label for="newAdmin" class="form-label font-medium text-gray-700">Add Admin (Temporary)</label>
                         <div class="input-group">
                             <input type="text" id="newAdmin" class="form-control geist-input" placeholder="Enter Discord User ID">
                             <button class="btn btn-primary geist-button geist-button-primary" type="button" onclick="addAdmin()">Add</button>
@@ -187,6 +232,18 @@
                     <div id="adminList" class="mb-3">
                         <!-- Admin list will be populated here -->
                         <div class="text-gray-500">Loading admins...</div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-2">Export Current Admin IDs</h3>
+                        <p class="text-gray-600">Copy this JSON to update your GitHub file:</p>
+                        <div class="position-relative">
+                            <div class="code-block" id="current-admin-json"></div>
+                            <button class="copy-btn" onclick="copyToClipboard('current-admin-json')">Copy</button>
+                        </div>
+                        <button class="btn btn-outline-secondary mt-2" onclick="updateAdminJsonDisplay()">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh JSON
+                        </button>
                     </div>
                 </div>
                 
@@ -219,7 +276,8 @@
         // Variables
         let config = {
             PREFIX: "",
-            ADMIN_IDS: []
+            ADMIN_IDS: [],
+            ADMIN_IDS_URL: ""
         };
         let startTime = new Date();
         
@@ -239,14 +297,35 @@
                     config = data;
                     document.getElementById('prefix').value = config.PREFIX || "";
                     document.getElementById('current-prefix').textContent = config.PREFIX ? `"${config.PREFIX}"` : "None (empty)";
+                    document.getElementById('github-url').textContent = config.ADMIN_IDS_URL || "URL not configured";
                     renderAdminList();
                     updateCommandCount();
+                    updateAdminJsonDisplay();
                     hideLoading();
                 })
                 .catch(error => {
                     showToast('Error loading configuration: ' + error.message, false);
                     hideLoading();
                 });
+        }
+        
+        // Update the admin JSON display
+        function updateAdminJsonDisplay() {
+            const jsonElement = document.getElementById('current-admin-json');
+            const jsonContent = JSON.stringify({ ADMIN_IDS: config.ADMIN_IDS }, null, 2);
+            jsonElement.textContent = jsonContent;
+        }
+        
+        // Copy to clipboard function
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Copied to clipboard!', true);
+            }).catch(err => {
+                showToast('Failed to copy: ' + err, false);
+            });
         }
         
         // Refresh admin IDs from GitHub
@@ -258,6 +337,7 @@
                     if (data.success) {
                         config.ADMIN_IDS = data.ADMIN_IDS;
                         renderAdminList();
+                        updateAdminJsonDisplay();
                         showToast('Admin IDs refreshed from GitHub', true);
                     } else {
                         showToast('Error refreshing admin IDs: ' + data.error, false);
@@ -321,7 +401,7 @@
                 
                 const removeBtn = document.createElement('button');
                 removeBtn.className = 'btn btn-sm btn-danger geist-button geist-button-error';
-                removeBtn.textContent = 'Remove';
+                removeBtn.innerHTML = '<i class="bi bi-trash me-1"></i> Remove';
                 removeBtn.onclick = function() {
                     removeAdmin(adminId);
                 };
@@ -383,7 +463,8 @@
                 .then((response) => {
                     newAdminInput.value = '';
                     renderAdminList();
-                    showToast('Admin added successfully! ' + (response.note || ''), true);
+                    updateAdminJsonDisplay();
+                    showToast('Admin added temporarily! ' + (response.note || ''), true);
                     hideLoading();
                 })
                 .catch(error => {
@@ -394,7 +475,7 @@
         
         // Remove an admin
         function removeAdmin(adminId) {
-            if (!confirm('Are you sure you want to remove this admin?')) {
+            if (!confirm('Are you sure you want to remove this admin? This change is temporary and will be lost when the bot restarts.')) {
                 return;
             }
             
@@ -404,7 +485,8 @@
             saveConfig()
                 .then((response) => {
                     renderAdminList();
-                    showToast('Admin removed successfully! ' + (response.note || ''), true);
+                    updateAdminJsonDisplay();
+                    showToast('Admin removed temporarily! ' + (response.note || ''), true);
                     hideLoading();
                 })
                 .catch(error => {

@@ -8,7 +8,7 @@ const url = require('url');
 
 // GitHub raw URL for admin_ids.json
 // Replace this with your actual GitHub raw URL when you have it
-const ADMIN_IDS_URL = process.env.ADMIN_IDS_URL || 'https://raw.githubusercontent.com/yourusername/yourrepo/main/admin_ids.json';
+const ADMIN_IDS_URL = process.env.ADMIN_IDS_URL || 'https://raw.githubusercontent.com/Levitzy/safsxcsac/refs/heads/main/admin_ids.json';
 
 // Load setup.json
 let setup = require('./setup.json');
@@ -46,21 +46,6 @@ async function fetchAdminIDs() {
             resolve([]);
         });
     });
-}
-
-// Function to save admin IDs to a local file (as a backup)
-function saveAdminIDsLocally(adminIDs) {
-    try {
-        fs.writeFileSync(
-            path.join(__dirname, 'admin_ids_backup.json'), 
-            JSON.stringify({ ADMIN_IDS: adminIDs }, null, 2)
-        );
-        console.log('Admin IDs saved to local backup file');
-        return true;
-    } catch (error) {
-        console.error('Error saving admin IDs locally:', error);
-        return false;
-    }
 }
 
 // Function to reload configuration
@@ -208,7 +193,8 @@ const server = http.createServer((req, res) => {
         // Include both PREFIX from setup.json and ADMIN_IDS from GitHub
         res.end(JSON.stringify({
             PREFIX: PREFIX,
-            ADMIN_IDS: ADMIN_IDS
+            ADMIN_IDS: ADMIN_IDS,
+            ADMIN_IDS_URL: ADMIN_IDS_URL
         }));
     }
     // API endpoint to update configuration
@@ -240,19 +226,13 @@ const server = http.createServer((req, res) => {
                 // Handle ADMIN_IDS update (now separate from setup.json)
                 if (newConfig.ADMIN_IDS && Array.isArray(newConfig.ADMIN_IDS)) {
                     ADMIN_IDS = newConfig.ADMIN_IDS;
-                    // Save locally as a backup
-                    saveAdminIDsLocally(ADMIN_IDS);
                 }
-                
-                // For the admins, we're not actually updating the GitHub file
-                // since that would require GitHub authentication
-                // Instead, we'll just update the in-memory version and save locally
                 
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ 
                     success: true, 
-                    message: 'Configuration updated successfully. Note: Admin IDs are updated in-memory only.',
-                    note: 'To persist admin IDs, update your GitHub admin_ids.json file.'
+                    message: 'Configuration updated successfully.',
+                    note: 'Admin IDs are updated in-memory only and will reset when the bot restarts.'
                 }));
             } catch (error) {
                 console.error('Error updating config:', error);
@@ -268,7 +248,8 @@ const server = http.createServer((req, res) => {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ 
                 success: true,
-                ADMIN_IDS: ADMIN_IDS
+                ADMIN_IDS: ADMIN_IDS,
+                source: ADMIN_IDS_URL
             }));
         }).catch(error => {
             res.writeHead(500, { 'Content-Type': 'application/json' });
