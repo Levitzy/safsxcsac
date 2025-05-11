@@ -1,8 +1,7 @@
 {
   "ADMIN_PERMISSIONS": {
     "1133953362530926622": [
-      "fbcreate",
-      "fbcreatev2"
+      "all"
     ]
   }
 }
