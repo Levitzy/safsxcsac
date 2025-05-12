@@ -11,14 +11,14 @@
  */
 export function initAdminPermissionDialog(commands, adminPermissions, onSave) {
   // Create dialog if it doesn't exist
-  let dialog = document.getElementById('admin-permission-dialog');
+  let dialog = document.getElementById("admin-permission-dialog")
   if (!dialog) {
-    dialog = createDialog();
-    document.body.appendChild(dialog);
+    dialog = createDialog()
+    document.body.appendChild(dialog)
   }
-  
+
   // Initialize dialog functionality
-  setupDialogFunctionality(commands, adminPermissions, onSave);
+  setupDialogFunctionality(commands, adminPermissions, onSave)
 }
 
 /**
@@ -26,13 +26,13 @@ export function initAdminPermissionDialog(commands, adminPermissions, onSave) {
  * @returns {HTMLElement} The dialog element
  */
 function createDialog() {
-  const dialog = document.createElement('div');
-  dialog.id = 'admin-permission-dialog';
-  dialog.className = 'fixed inset-0 z-50 overflow-y-auto hidden';
-  dialog.setAttribute('aria-labelledby', 'admin-permission-dialog-title');
-  dialog.setAttribute('role', 'dialog');
-  dialog.setAttribute('aria-modal', 'true');
-  
+  const dialog = document.createElement("div")
+  dialog.id = "admin-permission-dialog"
+  dialog.className = "fixed inset-0 z-50 overflow-y-auto hidden"
+  dialog.setAttribute("aria-labelledby", "admin-permission-dialog-title")
+  dialog.setAttribute("role", "dialog")
+  dialog.setAttribute("aria-modal", "true")
+
   dialog.innerHTML = `
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
       <!-- Background overlay -->
@@ -107,9 +107,9 @@ function createDialog() {
         </div>
       </div>
     </div>
-  `;
-  
-  return dialog;
+  `
+
+  return dialog
 }
 
 /**
@@ -119,51 +119,51 @@ function createDialog() {
  * @param {Function} onSave - Callback function when permissions are saved
  */
 function setupDialogFunctionality(commands, adminPermissions, onSave) {
-  const dialog = document.getElementById('admin-permission-dialog');
-  const closeBtn = document.getElementById('close-dialog-btn');
-  const cancelBtn = document.getElementById('cancel-btn');
-  const saveBtn = document.getElementById('save-permissions-btn');
-  const grantAllCheckbox = document.getElementById('grant-all-permissions');
-  const specificCommandsSection = document.getElementById('specific-commands-section');
-  const commandSearch = document.getElementById('command-search');
-  
+  const dialog = document.getElementById("admin-permission-dialog")
+  const closeBtn = document.getElementById("close-dialog-btn")
+  const cancelBtn = document.getElementById("cancel-btn")
+  const saveBtn = document.getElementById("save-permissions-btn")
+  const grantAllCheckbox = document.getElementById("grant-all-permissions")
+  const specificCommandsSection = document.getElementById("specific-commands-section")
+  const commandSearch = document.getElementById("command-search")
+
   // Close dialog handlers
-  closeBtn.addEventListener('click', closeDialog);
-  cancelBtn.addEventListener('click', closeDialog);
-  
+  closeBtn.addEventListener("click", closeDialog)
+  cancelBtn.addEventListener("click", closeDialog)
+
   // Close when clicking outside
-  dialog.addEventListener('click', (event) => {
+  dialog.addEventListener("click", (event) => {
     if (event.target === dialog) {
-      closeDialog();
+      closeDialog()
     }
-  });
-  
+  })
+
   // Toggle specific commands section visibility
-  grantAllCheckbox.addEventListener('change', () => {
-    specificCommandsSection.style.display = grantAllCheckbox.checked ? 'none' : 'block';
-  });
-  
+  grantAllCheckbox.addEventListener("change", () => {
+    specificCommandsSection.style.display = grantAllCheckbox.checked ? "none" : "block"
+  })
+
   // Search functionality
-  commandSearch.addEventListener('input', filterCommands);
-  
+  commandSearch.addEventListener("input", filterCommands)
+
   // Save button handler
-  saveBtn.addEventListener('click', () => {
-    const adminId = dialog.dataset.adminId;
-    const permissions = getSelectedPermissions();
-    
-    if (onSave && typeof onSave === 'function') {
-      onSave(adminId, permissions);
+  saveBtn.addEventListener("click", () => {
+    const adminId = dialog.dataset.adminId
+    const permissions = getSelectedPermissions()
+
+    if (onSave && typeof onSave === "function") {
+      onSave(adminId, permissions)
     }
-    
-    closeDialog();
-  });
-  
+
+    closeDialog()
+  })
+
   // Handle ESC key
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !dialog.classList.contains('hidden')) {
-      closeDialog();
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !dialog.classList.contains("hidden")) {
+      closeDialog()
     }
-  });
+  })
 }
 
 /**
@@ -173,56 +173,67 @@ function setupDialogFunctionality(commands, adminPermissions, onSave) {
  * @param {Array} currentPermissions - Current permissions for this admin
  */
 export function openAdminPermissionDialog(adminId, commands, currentPermissions) {
-  const dialog = document.getElementById('admin-permission-dialog');
-  const adminIdDisplay = document.getElementById('admin-id-display');
-  const grantAllCheckbox = document.getElementById('grant-all-permissions');
-  const commandList = document.getElementById('command-list');
-  const commandSearch = document.getElementById('command-search');
-  
+  const dialog = document.getElementById("admin-permission-dialog")
+  const adminIdDisplay = document.getElementById("admin-id-display")
+  const grantAllCheckbox = document.getElementById("grant-all-permissions")
+  const commandList = document.getElementById("command-list")
+  const commandSearch = document.getElementById("command-search")
+
   // Set admin ID
-  dialog.dataset.adminId = adminId;
-  adminIdDisplay.textContent = adminId;
-  
+  dialog.dataset.adminId = adminId
+  adminIdDisplay.textContent = adminId
+
   // Reset search
-  commandSearch.value = '';
-  
+  commandSearch.value = ""
+
   // Set "all" permission state
-  const hasAllPermission = currentPermissions.includes('all');
-  grantAllCheckbox.checked = hasAllPermission;
-  document.getElementById('specific-commands-section').style.display = hasAllPermission ? 'none' : 'block';
-  
+  const hasAllPermission = currentPermissions.includes("all")
+  grantAllCheckbox.checked = hasAllPermission
+  document.getElementById("specific-commands-section").style.display = hasAllPermission ? "none" : "block"
+
+  // Filter commands to only include admin_only commands
+  const adminCommands = commands.filter((cmd) => cmd.admin_only === true)
+
   // Populate command list
-  commandList.innerHTML = '';
-  commands.forEach(command => {
-    const isChecked = currentPermissions.includes(command.name);
-    const commandItem = document.createElement('div');
-    commandItem.className = 'flex items-center';
-    commandItem.dataset.commandName = command.name.toLowerCase();
-    commandItem.innerHTML = `
-      <label class="inline-flex items-center w-full p-2 rounded hover:bg-gray-50">
-        <input type="checkbox" class="command-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" 
-               value="${command.name}" ${isChecked ? 'checked' : ''}>
-        <span class="ml-2 text-sm font-medium text-gray-900">${command.name}</span>
-      </label>
-    `;
-    commandList.appendChild(commandItem);
-  });
-  
+  commandList.innerHTML = ""
+
+  if (adminCommands.length === 0) {
+    const noCommandsMsg = document.createElement("div")
+    noCommandsMsg.className = "col-span-2 py-4 text-center text-gray-500"
+    noCommandsMsg.textContent = "No admin-only commands available"
+    commandList.appendChild(noCommandsMsg)
+  } else {
+    adminCommands.forEach((command) => {
+      const isChecked = currentPermissions.includes(command.name)
+      const commandItem = document.createElement("div")
+      commandItem.className = "flex items-center"
+      commandItem.dataset.commandName = command.name.toLowerCase()
+      commandItem.innerHTML = `
+        <label class="inline-flex items-center w-full p-2 rounded hover:bg-gray-50">
+          <input type="checkbox" class="command-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" 
+                 value="${command.name}" ${isChecked ? "checked" : ""}>
+          <span class="ml-2 text-sm font-medium text-gray-900">${command.name}</span>
+        </label>
+      `
+      commandList.appendChild(commandItem)
+    })
+  }
+
   // Show dialog
-  dialog.classList.remove('hidden');
-  
+  dialog.classList.remove("hidden")
+
   // Focus search input
   setTimeout(() => {
-    commandSearch.focus();
-  }, 100);
+    commandSearch.focus()
+  }, 100)
 }
 
 /**
  * Close the admin permission dialog
  */
 function closeDialog() {
-  const dialog = document.getElementById('admin-permission-dialog');
-  dialog.classList.add('hidden');
+  const dialog = document.getElementById("admin-permission-dialog")
+  dialog.classList.add("hidden")
 }
 
 /**
@@ -230,41 +241,41 @@ function closeDialog() {
  * @returns {Array} Array of selected permissions
  */
 function getSelectedPermissions() {
-  const grantAllCheckbox = document.getElementById('grant-all-permissions');
-  
+  const grantAllCheckbox = document.getElementById("grant-all-permissions")
+
   if (grantAllCheckbox.checked) {
-    return ['all'];
+    return ["all"]
   }
-  
-  const selectedCommands = [];
-  const checkboxes = document.querySelectorAll('.command-checkbox:checked');
-  checkboxes.forEach(checkbox => {
-    selectedCommands.push(checkbox.value);
-  });
-  
-  return selectedCommands;
+
+  const selectedCommands = []
+  const checkboxes = document.querySelectorAll(".command-checkbox:checked")
+  checkboxes.forEach((checkbox) => {
+    selectedCommands.push(checkbox.value)
+  })
+
+  return selectedCommands
 }
 
 /**
  * Filter commands based on search input
  */
 function filterCommands() {
-  const searchInput = document.getElementById('command-search');
-  const searchTerm = searchInput.value.toLowerCase();
-  const commandItems = document.querySelectorAll('#command-list > div');
-  const noCommandsMessage = document.getElementById('no-commands-message');
-  
-  let visibleCount = 0;
-  
-  commandItems.forEach(item => {
-    const commandName = item.dataset.commandName;
-    if (commandName.includes(searchTerm)) {
-      item.classList.remove('hidden');
-      visibleCount++;
+  const searchInput = document.getElementById("command-search")
+  const searchTerm = searchInput.value.toLowerCase()
+  const commandItems = document.querySelectorAll("#command-list > div")
+  const noCommandsMessage = document.getElementById("no-commands-message")
+
+  let visibleCount = 0
+
+  commandItems.forEach((item) => {
+    const commandName = item.dataset.commandName
+    if (commandName && commandName.includes(searchTerm)) {
+      item.classList.remove("hidden")
+      visibleCount++
     } else {
-      item.classList.add('hidden');
+      item.classList.add("hidden")
     }
-  });
-  
-  noCommandsMessage.classList.toggle('hidden', visibleCount > 0);
+  })
+
+  noCommandsMessage.classList.toggle("hidden", visibleCount > 0)
 }
