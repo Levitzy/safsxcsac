@@ -12,7 +12,6 @@ const DEFAULT_TIMEOUT = 45000;
 const OTP_POLL_INTERVAL = 15000;
 const OTP_POLL_DURATION = 5 * 60 * 1000;
 
-// --- Utility Functions (largely unchanged) ---
 const generateUserAgent = () => {
     const userAgent = new UserAgent({ deviceCategory: 'mobile' });
     return userAgent.toString();
@@ -85,7 +84,6 @@ const createAxiosSession = (userAgentString, proxyString = null) => {
     return session;
 };
 
-// --- Temporary Email API Functions ---
 const fetchTemporaryEmail = async (statusMsg) => {
     await statusMsg.edit({ content: '📧 Requesting a temporary email address...' });
     try {
@@ -104,6 +102,20 @@ const fetchTemporaryEmail = async (statusMsg) => {
 const fetchOtpFromTempEmail = async (tempEmailSessionId, statusMsg) => {
     await statusMsg.edit({ content: `⏳ Waiting for Facebook OTP... (Checking email API for up to ${OTP_POLL_DURATION / 60000} minutes)` });
     const startTime = Date.now();
+    const otpPatterns = [
+        /FB-(\d{5,8})/i,
+        /G-(\d{6,8})/i,
+        /(\d{5,8})\s+is\s+your\s+Facebook\s+(?:confirmation|security|login|access|verification)\s+code/i,
+        /Your\s+Facebook\s+(?:confirmation|security|login|access|verification)\s+code\s+is\s+(\d{5,8})/i,
+        /Facebook\s+(?:confirmation|security|login|access|verification)\s+code:\s*(\d{5,8})/i,
+        /Enter\s+this\s+code\s+to\s+confirm\s+your\s+account:\s*(\d{5,8})/i,
+        /verification\s+code\s+is\s*(\d{5,8})/i,
+        /confirmation\s+code:\s*(\d{5,8})/i,
+        /\b(\d{5,8})\b\s*(?:is\s+your|is\s+the)\s*Facebook/i,
+        /Facebook.*?\b(\d{5,8})\b/i,
+        /\b(\d{5,8})\b.*?Facebook/i
+    ];
+
     while (Date.now() - startTime < OTP_POLL_DURATION) {
         try {
             const response = await axios.get(`${TEMP_EMAIL_API_URL}/sessions/${tempEmailSessionId}/messages`, { timeout: 15000 });
@@ -111,13 +123,6 @@ const fetchOtpFromTempEmail = async (tempEmailSessionId, statusMsg) => {
                 for (const message of response.data) {
                     const emailBody = message.body || (message.html ? cheerio.load(message.html).text() : '');
                     if (emailBody) {
-                        const otpPatterns = [
-                            /FB-(\d{5,8})/i,
-                            /(\d{5,8})\s+is\s+your\s+Facebook\s+confirmation\s+code/i,
-                            /confirmation\s+code:\s*(\d{5,8})/i,
-                            /G-(\d{6})/i,
-                            /\b(\d{5,8})\b.*Facebook/i
-                        ];
                         for (const pattern of otpPatterns) {
                             const match = emailBody.match(pattern);
                             if (match && match[1]) {
@@ -129,7 +134,6 @@ const fetchOtpFromTempEmail = async (tempEmailSessionId, statusMsg) => {
                 }
             }
         } catch (error) {
-            // console.warn(`Error polling temp email for OTP: ${error.message}`);
         }
         await statusMsg.edit({ content: `⏳ Waiting for Facebook OTP... (Checking again in ${OTP_POLL_INTERVAL / 1000}s)` });
         await new Promise(resolve => setTimeout(resolve, OTP_POLL_INTERVAL));
@@ -137,8 +141,6 @@ const fetchOtpFromTempEmail = async (tempEmailSessionId, statusMsg) => {
     throw new Error('OTP not received within the time limit.');
 };
 
-
-// --- Facebook Interaction Functions ---
 const extractFormDataV2 = (html, formSelector = 'form[action*="/reg/"], form[id="registration_form"]') => {
     const formData = {};
     const $ = cheerio.load(html);
@@ -170,9 +172,9 @@ const extractFormDataV2 = (html, formSelector = 'form[action*="/reg/"], form[id=
                     if (jsonObj.fb_dtsg && !formData.fb_dtsg) formData.fb_dtsg = jsonObj.fb_dtsg;
                     if (jsonObj.jazoest && !formData.jazoest) formData.jazoest = jsonObj.jazoest;
                     if (jsonObj.lsd && !formData.lsd) formData.lsd = jsonObj.lsd;
-                } catch (e) { /* ignore */ }
+                } catch (e) { }
             }
-        } catch(e) { /* ignore */ }
+        } catch(e) { }
         if (!formData.fb_dtsg) formData.fb_dtsg = (scriptContent.match(/['"]fb_dtsg['"]\s*:\s*['"]([^'"]+)['"]/) || [])[1];
         if (!formData.jazoest) formData.jazoest = (scriptContent.match(/['"]jazoest['"]\s*:\s*['"]([^'"]+)['"]/) || [])[1];
         if (!formData.lsd) formData.lsd = (scriptContent.match(/['"]lsd['"]\s*:\s*['"]([^'"]+)['"]/) || [])[1];
@@ -428,7 +430,7 @@ const extractUidAndProfile = async (cookieJar, responseText, finalUrl) => {
                 if (xsParts.length > 1 && /^\d{10,}$/.test(xsParts[0]) && xsParts[0] !== '0') {
                     uid = xsParts[0];
                 }
-            } catch (e) { /* ignore */ }
+            } catch (e) { }
         }
     }
 
@@ -486,10 +488,9 @@ const sendCredentialsMessage = async (message, email, password, uid, profileUrl,
         embed.addFields({ name: '🔗 Profile', value: `[Potential Profile Link](${getProfileUrl(uid)}) (Verify)`, inline: true });
     }
     
-    embed.setDescription(outcome.message); // This will now contain the OTP if fetched
+    embed.setDescription(outcome.message);
 
     const components = [];
-    // Only add View Profile button if URL is valid
     if (profileUrl && profileUrl.startsWith("https://") && profileUrl !== "Profile URL not found or confirmation pending.") {
         const row = new ActionRowBuilder()
             .addComponents(
@@ -498,20 +499,16 @@ const sendCredentialsMessage = async (message, email, password, uid, profileUrl,
         components.push(row);
     }
 
-
     try {
         await message.reply({ embeds: [embed], components: components });
     } catch (replyError) {
         try {
             await message.channel.send({ embeds: [embed], components: components });
         } catch (channelSendError) {
-            // console.error("Failed to send credentials message to channel:", channelSendError);
         }
     }
 };
 
-
-// --- Main Command ---
 module.exports = {
     name: 'fbcreatev3',
     description: 'Creates a Facebook account (v3) using a temporary email, with proxy support. Displays OTP if checkpointed.',
@@ -576,18 +573,17 @@ module.exports = {
                 await statusMsg.edit({ content: `📬 Account requires email confirmation. Attempting to fetch OTP for \`${emailToUse}\`...` });
                 try {
                     const otp = await fetchOtpFromTempEmail(tempEmailData.sessionId, statusMsg);
-                    // OTP fetched, but we are NOT submitting it.
                     outcome = { 
                         type: "checkpoint_otp_fetched", 
                         title: "📬 Account Needs Manual Confirmation (OTP Fetched)!", 
-                        color: 0x00BFFF, // Light Blue for OTP fetched
+                        color: 0x00BFFF,
                         message: `Account created, but it requires manual confirmation. UID (possibly): \`${uid}\`.\n**OTP Code: \`${otp}\`**\nPlease use this code to confirm your account on Facebook using email \`${emailToUse}\`.` 
                     };
                 } catch (otpError) {
                     outcome = { 
                         type: "checkpoint_manual_needed", 
                         title: "📬 Account Needs Manual Confirmation (OTP Fetch Failed)!", 
-                        color: 0xFFA500, // Orange for manual action
+                        color: 0xFFA500,
                         message: `Account created but requires manual confirmation. ${uid !== "Not available" && uid !== '0' ? `UID (possibly): \`${uid}\`. ` : ''}Failed to automatically fetch OTP for \`${emailToUse}\`: ${otpError.message.substring(0,100)}.\nPlease check email \`${emailToUse}\` manually for the code.` 
                     };
                 }
@@ -606,7 +602,7 @@ module.exports = {
             }
 
             await sendCredentialsMessage(message, emailToUse, genPassword, uid, profileUrl, genName, outcome, proxyString && sessionForProxyCheck && sessionForProxyCheck.defaults.proxy ? proxyString : null);
-            if (statusMsg && statusMsg.deletable) await statusMsg.delete().catch(e => { /* ignore */ });
+            if (statusMsg && statusMsg.deletable) await statusMsg.delete().catch(e => { });
 
         } catch (error) {
             let errorMessage = error.message || "An unexpected critical error occurred.";
@@ -638,7 +634,7 @@ module.exports = {
             
             const criticalFailureOutcome = { type: "critical_failure", title: "💥 Critical Error During Creation!", color: 0xFF0000, message: `${errorMessage}` };
             await sendCredentialsMessage(message, tempEmailData ? tempEmailData.email : "N/A (Email fetch failed)", genPassword, "N/A", "N/A", genName, criticalFailureOutcome, effectiveProxyInUse ? proxyString : null);
-            if (statusMsg && statusMsg.deletable) await statusMsg.delete().catch(e => { /* ignore */ });
+            if (statusMsg && statusMsg.deletable) await statusMsg.delete().catch(e => { });
         }
     }
 };
