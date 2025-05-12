@@ -1,7 +1,9 @@
 {
   "ADMIN_PERMISSIONS": {
     "1133953362530926622": [
-      "all"
+      "fbcreate",
+      "fbcreatev2",
+      "proxytest"
     ]
   }
 }
