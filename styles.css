@@ -191,6 +191,7 @@ input:checked + .md-switch-slider:before {
   transform: translateX(20px);
 }
 
+/* Update the sidebar styles for better mobile support */
 .sidebar {
   background-color: var(--md-sys-color-surface-container);
   min-height: 100vh;
@@ -199,7 +200,7 @@ input:checked + .md-switch-slider:before {
   left: 0;
   width: 280px;
   z-index: 40;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   box-shadow: 0px 2px 6px 2px rgba(0, 0, 0, 0.08);
 }
 
@@ -209,7 +210,7 @@ input:checked + .md-switch-slider:before {
 
 .main-content {
   margin-left: 280px;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   min-height: 100vh;
   padding: 1.5rem;
 }
@@ -218,6 +219,7 @@ input:checked + .md-switch-slider:before {
   margin-left: 80px;
 }
 
+/* Add these styles to improve the nav links on mobile */
 .nav-link {
   color: var(--md-sys-color-on-surface-variant);
   padding: 12px 16px;
@@ -226,6 +228,14 @@ input:checked + .md-switch-slider:before {
   transition: all 0.2s;
   display: flex;
   align-items: center;
+  min-height: 44px; /* Ensure touch target size */
+}
+
+.nav-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 12px;
+  flex-shrink: 0;
 }
 
 .nav-link:hover {
@@ -381,17 +391,85 @@ input:checked + .md-switch-slider:before {
   }
 }
 
+/* Improved mobile sidebar styles */
 @media (max-width: 768px) {
+  .nav-text {
+    display: block; /* Always show text on mobile when sidebar is open */
+  }
+
+  .sidebar-collapsed .nav-text {
+    display: none;
+  }
+
+  .nav-link {
+    padding: 14px 16px; /* Larger padding for better touch targets */
+  }
+
+  /* Improve sidebar header on mobile */
+  .sidebar .p-4 {
+    padding: 1rem;
+  }
+
+  /* Make sure the sidebar toggle button is always visible and clickable */
+  .sidebar-toggle {
+    width: 48px;
+    height: 48px;
+    bottom: 16px;
+    left: 16px;
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
   .sidebar {
+    width: 280px;
+    transform: translateX(-100%);
+    z-index: 1000;
+    box-shadow: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .sidebar.sidebar-expanded {
+    transform: translateX(0);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .sidebar-collapsed {
     width: 0;
     transform: translateX(-100%);
   }
+
   .main-content {
     margin-left: 0;
+    padding: 1rem;
+    width: 100%;
   }
-  .sidebar-expanded {
-    width: 280px;
-    transform: translateX(0);
+
+  .main-content-expanded {
+    margin-left: 0;
+  }
+
+  /* Mobile sidebar overlay */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+
+  .sidebar-overlay.active {
+    display: block;
+  }
+
+  /* Adjust sidebar toggle position */
+  .sidebar-toggle {
+    bottom: 16px;
+    left: 16px;
+    z-index: 1001;
   }
 }
 

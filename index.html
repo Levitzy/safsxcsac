@@ -15,13 +15,16 @@
         <div class="spinner"></div>
     </div>
 
+    <!-- Add this right after the loading div and before the sidebar div -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="flex flex-col h-full">
             <div class="p-4 border-b border-gray-200">
                 <h1 class="text-xl font-bold mb-4 flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09-.01-.02-.04-.03-.07-.03-1.5.26-2.93.71-4.27 1.33-.01 0-.02.01-.03.02-2.72 4.07-3.47 8.03-3.1 11.95 0 .02.01.04.03.05 1.8 1.32 3.53 2.12 5.24 2.65.03.01.06 0 .07-.02.4-.55.76-1.13 1.07-1.74.02-.04 0-.08-.04-.09-.57-.22-1.11-.48-1.64-.78-.04-.02-.04-.08-.01-.11.11-.08.22-.17.33-.25.02-.02.05-.02.07-.01 3.44 1.57 7.15 1.57 10.55 0 .02-.01.05-.01.07.01.11.09.22.17.33.26.04.03.04.09-.01.11-.52.31-1.07.56-1.64.78-.04.01-.05.06-.04.09.32.61.68 1.19 1.07 1.74.03.02.06.03.09.02 1.72-.53 3.45-1.33 5.25-2.65.02-.01.03-.03.03-.05.44-4.53-.73-8.46-3.1-11.95-.01-.01-.02-.02-.04-.02zM8.52 14.91c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12 0 1.17-.84 2.12-1.89 2.12zm6.97 0c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12 0 1.17-.83 2.12-1.89 2.12z"/>
+                        <path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09-.01-.02-.04-.03-.07-.03-1.5.26-2.93.71-4.27 1.33-.01 0-.02.01-.03.02-2.72 4.07-3.47 8.03-3.1 11.95 0 .02.01.04.03.05 1.8 1.32 3.53 2.12 5.24 2.65.03.01.06 0 .07-.02.4-.55.76-1.13 1.07-1.74.02-.04 0-.08-.04-.09-.57-.22-1.11-.48-1.64-.78-.04-.02-.04-.08-.01-.11.11-.08.22-.17.33-.25.02-.02.05-.02.07-.01 3.44 1.57 7.15 1.57 10.55 0 .02-.01.05-.01.07.01.11.09.22.17.26.04.03.04.09-.01.11-.52.31-1.07.56-1.64.78-.04.01-.05.06-.04.09.32.61.68 1.19 1.07 1.74.03.02.06.03.09.02 1.72-.53 3.45-1.33 5.25-2.65.02-.01.03-.03.03-.05.44-4.53-.73-8.46-3.1-11.95-.01-.01-.02-.02-.04-.02zM8.52 14.91c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12 0 1.17-.84 2.12-1.89 2.12zm6.97 0c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12 0 1.17-.83 2.12-1.89 2.12z"/>
                     </svg>
                     <span class="nav-text">Bot Admin</span>
                 </h1>
@@ -1057,22 +1060,23 @@
             }
         }
         
+        
         function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('main-content');
-            const toggleIcon = document.getElementById('toggle-icon');
-            
-            sidebarCollapsed = !sidebarCollapsed;
-            
-            if (sidebarCollapsed) {
-                sidebar.classList.add('sidebar-collapsed');
-                mainContent.classList.add('main-content-expanded');
-                toggleIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />';
-            } else {
-                sidebar.classList.remove('sidebar-collapsed');
-                mainContent.classList.remove('main-content-expanded');
-                toggleIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />';
-            }
+          const sidebar = document.getElementById('sidebar');
+          const mainContent = document.getElementById('main-content');
+          const toggleIcon = document.getElementById('toggle-icon');
+          
+          sidebarCollapsed = !sidebarCollapsed;
+          
+          if (sidebarCollapsed) {
+            sidebar.classList.add('sidebar-collapsed');
+            mainContent.classList.add('main-content-expanded');
+            toggleIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />';
+          } else {
+            sidebar.classList.remove('sidebar-collapsed');
+            mainContent.classList.remove('main-content-expanded');
+            toggleIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />';
+          }
         }
         
         function updateAdminJsonDisplay() {
@@ -1372,65 +1376,5 @@
         window.refreshData = refreshData;
     </script>
     <!-- Add this script to the bottom of the file, just before the closing </body> tag -->
-    <script>
-      // Fix for mobile Safari 100vh issue
-      function setMobileHeight() {
-        document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
-      }
-      
-      // Set initial height
-      setMobileHeight();
-      
-      // Update on resize and orientation change
-      window.addEventListener('resize', setMobileHeight);
-      window.addEventListener('orientationchange', setMobileHeight);
-      
-      // Improve mobile sidebar behavior
-      document.addEventListener('DOMContentLoaded', function() {
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', function(e) {
-          const sidebar = document.getElementById('sidebar');
-          const sidebarToggle = document.getElementById('sidebar-toggle');
-          
-          if (window.innerWidth <= 768 && 
-              sidebar.classList.contains('sidebar-expanded') && 
-              !sidebar.contains(e.target) && 
-              e.target !== sidebarToggle && 
-              !sidebarToggle.contains(e.target)) {
-            toggleSidebar();
-          }
-        });
-        
-        // Add swipe gesture support for sidebar
-        let touchStartX = 0;
-        let touchEndX = 0;
-        
-        document.addEventListener('touchstart', function(e) {
-          touchStartX = e.changedTouches[0].screenX;
-        }, false);
-        
-        document.addEventListener('touchend', function(e) {
-          touchEndX = e.changedTouches[0].screenX;
-          handleSwipe();
-        }, false);
-        
-        function handleSwipe() {
-          const sidebar = document.getElementById('sidebar');
-          const swipeThreshold = 100;
-          
-          if (touchEndX - touchStartX > swipeThreshold) {
-            // Swipe right - open sidebar
-            if (!sidebar.classList.contains('sidebar-expanded')) {
-              toggleSidebar();
-            }
-          } else if (touchStartX - touchEndX > swipeThreshold) {
-            // Swipe left - close sidebar
-            if (sidebar.classList.contains('sidebar-expanded')) {
-              toggleSidebar();
-            }
-          }
-        }
-      });
-    </script>
 </body>
 </html>
