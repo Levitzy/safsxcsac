@@ -394,3 +394,171 @@ input:checked + .md-switch-slider:before {
     transform: translateX(0);
   }
 }
+
+/* Add these responsive improvements to the bottom of the file */
+
+/* Improved mobile responsiveness */
+@media (max-width: 768px) {
+  /* Adjust sidebar for mobile */
+  .sidebar {
+    width: 0;
+    transform: translateX(-100%);
+    z-index: 50;
+  }
+
+  .sidebar-expanded {
+    width: 280px;
+    transform: translateX(0);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .main-content {
+    margin-left: 0;
+    padding: 1rem;
+  }
+
+  /* Adjust cards for mobile */
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
+
+  /* Make buttons more touch-friendly */
+  .md-button-filled,
+  .md-button-outlined,
+  .md-button-text {
+    padding: 10px 16px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Improve form elements on mobile */
+  .md-input {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+    padding: 12px;
+  }
+
+  /* Adjust admin items for mobile */
+  .admin-item {
+    padding: 16px;
+  }
+
+  /* Improve table display on mobile */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Adjust sidebar toggle position */
+  .sidebar-toggle {
+    bottom: 16px;
+    left: 16px;
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  /* Further adjustments for very small screens */
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .flex-wrap {
+    flex-wrap: wrap;
+  }
+
+  .stat-card {
+    margin-bottom: 12px;
+  }
+
+  /* Stack buttons on very small screens */
+  .flex.space-x-2 {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .flex.space-x-2 button {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  /* Make headings smaller on mobile */
+  h1.text-2xl {
+    font-size: 1.5rem;
+  }
+
+  h2.text-lg,
+  h3.text-lg {
+    font-size: 1.125rem;
+  }
+
+  /* Adjust padding for content areas */
+  .p-6 {
+    padding: 1rem;
+  }
+}
+
+/* Improve touch targets */
+button,
+a,
+.nav-link,
+input[type="checkbox"] + label {
+  touch-action: manipulation;
+}
+
+/* Fix for iOS momentum scrolling */
+.overflow-y-auto,
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent content overflow */
+pre,
+code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Improve chart responsiveness */
+canvas {
+  max-width: 100%;
+  height: auto !important;
+}
+
+/* Fix for mobile Safari 100vh issue */
+.min-h-svh {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  min-height: 100svh;
+}
+
+/* Improve form layout on small screens */
+@media (max-width: 640px) {
+  .md\:col-span-5,
+  .md\:col-span-2 {
+    grid-column: span 12 / span 12;
+  }
+
+  .md\:col-span-2.flex.items-end {
+    margin-top: 0.5rem;
+  }
+
+  /* Adjust button layout */
+  .flex.justify-between {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .flex.justify-between > div:last-child {
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
+  }
+}

@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Update the viewport meta tag for better mobile rendering -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Discord Bot Admin Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
@@ -1369,6 +1370,67 @@
         window.changeAdminToken = changeAdminToken;
         window.logout = logout;
         window.refreshData = refreshData;
+    </script>
+    <!-- Add this script to the bottom of the file, just before the closing </body> tag -->
+    <script>
+      // Fix for mobile Safari 100vh issue
+      function setMobileHeight() {
+        document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+      }
+      
+      // Set initial height
+      setMobileHeight();
+      
+      // Update on resize and orientation change
+      window.addEventListener('resize', setMobileHeight);
+      window.addEventListener('orientationchange', setMobileHeight);
+      
+      // Improve mobile sidebar behavior
+      document.addEventListener('DOMContentLoaded', function() {
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(e) {
+          const sidebar = document.getElementById('sidebar');
+          const sidebarToggle = document.getElementById('sidebar-toggle');
+          
+          if (window.innerWidth <= 768 && 
+              sidebar.classList.contains('sidebar-expanded') && 
+              !sidebar.contains(e.target) && 
+              e.target !== sidebarToggle && 
+              !sidebarToggle.contains(e.target)) {
+            toggleSidebar();
+          }
+        });
+        
+        // Add swipe gesture support for sidebar
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        document.addEventListener('touchstart', function(e) {
+          touchStartX = e.changedTouches[0].screenX;
+        }, false);
+        
+        document.addEventListener('touchend', function(e) {
+          touchEndX = e.changedTouches[0].screenX;
+          handleSwipe();
+        }, false);
+        
+        function handleSwipe() {
+          const sidebar = document.getElementById('sidebar');
+          const swipeThreshold = 100;
+          
+          if (touchEndX - touchStartX > swipeThreshold) {
+            // Swipe right - open sidebar
+            if (!sidebar.classList.contains('sidebar-expanded')) {
+              toggleSidebar();
+            }
+          } else if (touchStartX - touchEndX > swipeThreshold) {
+            // Swipe left - close sidebar
+            if (sidebar.classList.contains('sidebar-expanded')) {
+              toggleSidebar();
+            }
+          }
+        }
+      });
     </script>
 </body>
 </html>

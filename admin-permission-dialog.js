@@ -21,10 +21,7 @@ export function initAdminPermissionDialog(commands, adminPermissions, onSave) {
   setupDialogFunctionality(commands, adminPermissions, onSave)
 }
 
-/**
- * Create the dialog element
- * @returns {HTMLElement} The dialog element
- */
+// Update the dialog to be more mobile-friendly
 function createDialog() {
   const dialog = document.createElement("div")
   dialog.id = "admin-permission-dialog"
@@ -42,25 +39,25 @@ function createDialog() {
       <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
       
       <!-- Dialog panel -->
-      <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full md:max-w-xl">
+      <div class="inline-block w-full overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full md:max-w-xl">
         <!-- Dialog header -->
         <div class="px-4 pt-5 pb-4 bg-gray-50 sm:p-6 sm:pb-4 border-b border-gray-200">
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-medium leading-6 text-gray-900" id="admin-permission-dialog-title">
               Edit Admin Permissions
             </h3>
-            <button type="button" id="close-dialog-btn" class="text-gray-400 hover:text-gray-500 focus:outline-none">
+            <button type="button" id="close-dialog-btn" class="text-gray-400 hover:text-gray-500 focus:outline-none p-2" style="min-height: auto;">
               <span class="sr-only">Close</span>
               <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <p class="mt-2 text-sm text-gray-500">Admin ID: <span id="admin-id-display" class="font-mono font-medium"></span></p>
+          <p class="mt-2 text-sm text-gray-500">Admin ID: <span id="admin-id-display" class="font-mono font-medium break-all"></span></p>
         </div>
         
         <!-- Dialog content -->
-        <div class="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4">
+        <div class="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4 max-h-[70vh] overflow-y-auto">
           <!-- All permissions toggle -->
           <div class="mb-6">
             <label class="relative inline-flex items-center cursor-pointer">
@@ -97,11 +94,11 @@ function createDialog() {
         </div>
         
         <!-- Dialog footer -->
-        <div class="px-4 py-3 bg-gray-50 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200">
-          <button type="button" id="save-permissions-btn" class="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+        <div class="px-4 py-3 bg-gray-50 sm:px-6 flex flex-col sm:flex-row-reverse border-t border-gray-200 gap-2">
+          <button type="button" id="save-permissions-btn" class="w-full inline-flex justify-center px-4 py-2 text-base font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
             Save Changes
           </button>
-          <button type="button" id="cancel-btn" class="inline-flex justify-center w-full px-4 py-2 mt-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+          <button type="button" id="cancel-btn" class="w-full inline-flex justify-center px-4 py-2 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm">
             Cancel
           </button>
         </div>
