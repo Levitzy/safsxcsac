@@ -4,161 +4,254 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Discord Bot Admin Panel</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         :root {
-            --primary-color: #5865F2; /* Discord blue */
-            --primary-hover: #4752c4;
-            --secondary-color: #2D3748;
-            --accent-color: #7289DA; /* Discord blurple */
-            --success-color: #43B581; /* Discord green */
-            --danger-color: #F04747; /* Discord red */
-            --warning-color: #FAA61A; /* Discord yellow */
-            --dark-bg: #36393F; /* Discord dark */
-            --darker-bg: #2F3136; /* Discord sidebar */
-            --light-bg: #F6F6F7; /* Discord light */
-            --card-bg: #FFFFFF;
-            --text-primary: #060607;
-            --text-secondary: #72767D;
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-primary-container: #EADDFF;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-on-primary-container: #21005E;
+            --md-sys-color-secondary: #625B71;
+            --md-sys-color-secondary-container: #E8DEF8;
+            --md-sys-color-on-secondary: #FFFFFF;
+            --md-sys-color-on-secondary-container: #1E192B;
+            --md-sys-color-tertiary: #7D5260;
+            --md-sys-color-tertiary-container: #FFD8E4;
+            --md-sys-color-on-tertiary: #FFFFFF;
+            --md-sys-color-on-tertiary-container: #370B1E;
+            --md-sys-color-error: #B3261E;
+            --md-sys-color-error-container: #F9DEDC;
+            --md-sys-color-on-error: #FFFFFF;
+            --md-sys-color-on-error-container: #370B1E;
+            --md-sys-color-background: #FFFBFE;
+            --md-sys-color-on-background: #1C1B1F;
+            --md-sys-color-surface: #FFFBFE;
+            --md-sys-color-on-surface: #1C1B1F;
+            --md-sys-color-surface-variant: #E7E0EC;
+            --md-sys-color-on-surface-variant: #49454E;
+            --md-sys-color-outline: #79747E;
+            --md-sys-color-outline-variant: #CAC4D0;
+            --md-sys-color-shadow: #000000;
+            --md-sys-color-scrim: #000000;
+            --md-sys-color-inverse-surface: #313033;
+            --md-sys-color-inverse-on-surface: #F4EFF4;
+            --md-sys-color-inverse-primary: #D0BCFF;
+            --md-sys-color-surface-dim: #DED8E1;
+            --md-sys-color-surface-bright: #FFF8F9;
+            --md-sys-color-surface-container-lowest: #FFFFFF;
+            --md-sys-color-surface-container-low: #F7F2FA;
+            --md-sys-color-surface-container: #F3EDF7;
+            --md-sys-color-surface-container-high: #ECE6F0;
+            --md-sys-color-surface-container-highest: #E6E0E9;
         }
         
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #F3F4F6;
-            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--md-sys-color-background);
+            color: var(--md-sys-color-on-background);
             line-height: 1.5;
         }
         
-        .navbar-brand {
-            font-weight: 700;
-            letter-spacing: -0.025em;
+        .md-elevation-1 {
+            box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.12), 0px 1px 2px 0px rgba(0, 0, 0, 0.14);
+        }
+        
+        .md-elevation-2 {
+            box-shadow: 0px 2px 6px 2px rgba(0, 0, 0, 0.08), 0px 1px 2px 0px rgba(0, 0, 0, 0.14);
+        }
+        
+        .md-elevation-3 {
+            box-shadow: 0px 4px 8px 3px rgba(0, 0, 0, 0.08), 0px 1px 3px 0px rgba(0, 0, 0, 0.14);
+        }
+        
+        .md-card {
+            background-color: var(--md-sys-color-surface);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .md-card:hover {
+            box-shadow: 0px 4px 8px 3px rgba(0, 0, 0, 0.08), 0px 1px 3px 0px rgba(0, 0, 0, 0.14);
+        }
+        
+        .md-button-filled {
+            background-color: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+            border-radius: 20px;
+            padding: 10px 24px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .md-button-filled:hover {
+            background-color: #7965AF;
+            box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.12), 0px 1px 2px 0px rgba(0, 0, 0, 0.14);
+        }
+        
+        .md-button-outlined {
+            background-color: transparent;
+            color: var(--md-sys-color-primary);
+            border: 1px solid var(--md-sys-color-outline);
+            border-radius: 20px;
+            padding: 10px 24px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .md-button-outlined:hover {
+            background-color: rgba(103, 80, 164, 0.08);
+            border-color: var(--md-sys-color-primary);
+        }
+        
+        .md-button-text {
+            background-color: transparent;
+            color: var(--md-sys-color-primary);
+            border: none;
+            border-radius: 20px;
+            padding: 10px 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .md-button-text:hover {
+            background-color: rgba(103, 80, 164, 0.08);
+        }
+        
+        .md-chip {
+            background-color: var(--md-sys-color-surface-variant);
+            color: var(--md-sys-color-on-surface-variant);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .md-chip-filled {
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+        
+        .md-input {
+            background-color: var(--md-sys-color-surface-container);
+            border: 1px solid var(--md-sys-color-outline);
+            border-radius: 4px;
+            padding: 12px 16px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+        
+        .md-input:focus {
+            border-color: var(--md-sys-color-primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(103, 80, 164, 0.2);
+        }
+        
+        .md-switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 32px;
+        }
+        
+        .md-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .md-switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--md-sys-color-surface-variant);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .md-switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 24px;
+            width: 24px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .md-switch-slider {
+            background-color: var(--md-sys-color-primary);
+        }
+        
+        input:checked + .md-switch-slider:before {
+            transform: translateX(20px);
         }
         
         .sidebar {
-            background-color: var(--darker-bg);
+            background-color: var(--md-sys-color-surface-container);
             min-height: 100vh;
             position: fixed;
             top: 0;
             left: 0;
-            width: 250px;
-            z-index: 100;
+            width: 280px;
+            z-index: 40;
             transition: all 0.3s;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            box-shadow: 0px 2px 6px 2px rgba(0, 0, 0, 0.08);
         }
         
         .sidebar-collapsed {
-            width: 70px;
+            width: 80px;
         }
         
         .main-content {
-            margin-left: 250px;
+            margin-left: 280px;
             transition: all 0.3s;
             min-height: 100vh;
             padding: 1.5rem;
         }
         
         .main-content-expanded {
-            margin-left: 70px;
-        }
-        
-        .card {
-            border: none;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            transition: all 0.3s ease;
-            overflow: hidden;
-        }
-        
-        .card:hover {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            transform: translateY(-2px);
-        }
-        
-        .card-header {
-            background-color: #fff;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            padding: 1.25rem 1.5rem;
-        }
-        
-        .btn {
-            border-radius: 0.5rem;
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            transition: all 0.2s;
-        }
-        
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        
-        .btn-primary:hover {
-            background-color: var(--primary-hover);
-            border-color: var(--primary-hover);
-        }
-        
-        .btn-danger {
-            background-color: var(--danger-color);
-            border-color: var(--danger-color);
-        }
-        
-        .form-control {
-            border-radius: 0.5rem;
-            padding: 0.5rem 1rem;
-            border: 1px solid #E2E8F0;
-        }
-        
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.25rem rgba(88, 101, 242, 0.25);
-        }
-        
-        .badge {
-            font-weight: 500;
-            padding: 0.35em 0.65em;
-            border-radius: 0.375rem;
-        }
-        
-        .badge-admin {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        
-        .badge-command {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-        
-        .badge-all {
-            background-color: var(--success-color);
-            color: white;
+            margin-left: 80px;
         }
         
         .nav-link {
-            color: #fff;
-            padding: 0.75rem 1.25rem;
-            border-radius: 0.5rem;
-            margin: 0.25rem 0.5rem;
+            color: var(--md-sys-color-on-surface-variant);
+            padding: 12px 16px;
+            border-radius: 100px;
+            margin: 4px 8px;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
         }
         
         .nav-link:hover {
-            background-color: rgba(255,255,255,0.1);
-            color: #fff;
+            background-color: var(--md-sys-color-surface-variant);
+            color: var(--md-sys-color-on-surface-variant);
         }
         
         .nav-link.active {
-            background-color: var(--primary-color);
-            color: #fff;
+            background-color: var(--md-sys-color-secondary-container);
+            color: var(--md-sys-color-on-secondary-container);
         }
         
         .nav-icon {
-            width: 1.5rem;
-            text-align: center;
-            margin-right: 0.75rem;
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
         }
         
         .loading {
@@ -167,20 +260,20 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.8);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 2000;
-            backdrop-filter: blur(5px);
+            z-index: 50;
+            backdrop-filter: blur(4px);
         }
         
         .spinner {
-            width: 3rem;
-            height: 3rem;
-            border: 0.3em solid rgba(88, 101, 242, 0.2);
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(103, 80, 164, 0.2);
             border-radius: 50%;
-            border-top-color: var(--primary-color);
+            border-top-color: var(--md-sys-color-primary);
             animation: spin 1s ease-in-out infinite;
         }
         
@@ -188,127 +281,96 @@
             to { transform: rotate(360deg); }
         }
         
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1090;
-        }
-        
-        .code-block {
-            background-color: #F8F9FA;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            font-family: 'Fira Code', monospace;
-            overflow-x: auto;
-            margin: 1rem 0;
-            white-space: pre;
-            border: 1px solid #E2E8F0;
-            position: relative;
-        }
-        
-        .copy-btn {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        }
-        
-        .copy-btn:hover {
-            opacity: 1;
-        }
-        
-        .admin-item {
-            padding: 1.25rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            background-color: #fff;
-            border: 1px solid #E2E8F0;
-            transition: all 0.2s;
-        }
-        
-        .admin-item:hover {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        
-        .permission-badge {
-            font-size: 0.8em;
-            margin-right: 0.3rem;
-            margin-bottom: 0.3rem;
-            padding: 0.35em 0.65em;
-            border-radius: 0.375rem;
-        }
-        
         .stat-card {
-            border-radius: 0.75rem;
-            padding: 1.5rem;
+            border-radius: 16px;
+            padding: 24px;
             height: 100%;
             transition: all 0.3s;
-            background-color: #fff;
-            border: 1px solid rgba(0,0,0,0.05);
+            background-color: var(--md-sys-color-surface);
+            border: 1px solid var(--md-sys-color-outline-variant);
         }
         
         .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transform: translateY(-4px);
+            box-shadow: 0px 4px 8px 3px rgba(0, 0, 0, 0.08);
         }
         
         .stat-icon {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            color: var(--primary-color);
+            font-size: 32px;
+            margin-bottom: 16px;
+            color: var(--md-sys-color-primary);
         }
         
         .stat-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--md-sys-color-on-surface);
         }
         
         .stat-label {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
+            color: var(--md-sys-color-on-surface-variant);
+            font-size: 14px;
         }
         
         .sidebar-toggle {
             position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 101;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: var(--primary-color);
-            color: white;
+            bottom: 24px;
+            left: 24px;
+            z-index: 41;
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            background-color: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            box-shadow: 0px 4px 8px 3px rgba(0, 0, 0, 0.14);
             transition: all 0.3s;
         }
         
         .sidebar-toggle:hover {
-            background-color: var(--primary-hover);
-            transform: scale(1.1);
+            background-color: #7965AF;
+            transform: scale(1.05);
         }
         
         .progress-thin {
             height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            border-radius: 4px;
         }
         
         .memory-usage {
             height: 200px;
         }
         
+        .admin-item {
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            background-color: var(--md-sys-color-surface);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            transition: all 0.2s;
+        }
+        
+        .admin-item:hover {
+            box-shadow: 0px 2px 6px 2px rgba(0, 0, 0, 0.08);
+        }
+        
         /* Responsive adjustments */
         @media (max-width: 992px) {
             .sidebar {
-                width: 70px;
+                width: 80px;
             }
             .main-content {
-                margin-left: 70px;
+                margin-left: 80px;
             }
             .nav-text {
                 display: none;
@@ -316,14 +378,14 @@
             .nav-icon {
                 margin-right: 0;
             }
+            .sidebar-expanded {
+                width: 280px;
+            }
             .sidebar-expanded .nav-text {
                 display: inline;
             }
-            .sidebar-expanded {
-                width: 250px;
-            }
             .sidebar-expanded .nav-icon {
-                margin-right: 0.75rem;
+                margin-right: 12px;
             }
         }
         
@@ -336,81 +398,86 @@
                 margin-left: 0;
             }
             .sidebar-expanded {
-                width: 250px;
+                width: 280px;
                 transform: translateX(0);
             }
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-50">
     <div id="loading" class="loading" style="display: none;">
         <div class="spinner"></div>
     </div>
 
-    <div class="toast-container">
-        <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <strong id="toast-title" class="me-auto">Notification</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div id="toast-body" class="toast-body"></div>
-        </div>
-    </div>
-
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
-        <div class="d-flex flex-column h-100">
-            <div class="p-4 text-white">
-                <h1 class="text-xl font-bold mb-4 d-flex align-items-center">
-                    <i class="bi bi-discord me-2"></i>
+        <div class="flex flex-col h-full">
+            <div class="p-4 border-b border-gray-200">
+                <h1 class="text-xl font-bold mb-4 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09-.01-.02-.04-.03-.07-.03-1.5.26-2.93.71-4.27 1.33-.01 0-.02.01-.03.02-2.72 4.07-3.47 8.03-3.1 11.95 0 .02.01.04.03.05 1.8 1.32 3.53 2.12 5.24 2.65.03.01.06 0 .07-.02.4-.55.76-1.13 1.07-1.74.02-.04 0-.08-.04-.09-.57-.22-1.11-.48-1.64-.78-.04-.02-.04-.08-.01-.11.11-.08.22-.17.33-.25.02-.02.05-.02.07-.01 3.44 1.57 7.15 1.57 10.55 0 .02-.01.05-.01.07.01.11.09.22.17.33.26.04.03.04.09-.01.11-.52.31-1.07.56-1.64.78-.04.01-.05.06-.04.09.32.61.68 1.19 1.07 1.74.03.02.06.03.09.02 1.72-.53 3.45-1.33 5.25-2.65.02-.01.03-.03.03-.05.44-4.53-.73-8.46-3.1-11.95-.01-.01-.02-.02-.04-.02zM8.52 14.91c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12 0 1.17-.84 2.12-1.89 2.12zm6.97 0c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12 0 1.17-.83 2.12-1.89 2.12z"/>
+                    </svg>
                     <span class="nav-text">Bot Admin</span>
                 </h1>
             </div>
-            <ul class="nav flex-column mb-auto p-2">
+            <ul class="nav flex-col mb-auto p-2">
                 <li class="nav-item">
                     <a href="#dashboard" class="nav-link active">
-                        <i class="bi bi-speedometer2 nav-icon"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
                         <span class="nav-text">Dashboard</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="#admin-management" class="nav-link">
-                        <i class="bi bi-shield-lock nav-icon"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
                         <span class="nav-text">Admin Management</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="#bot-info" class="nav-link">
-                        <i class="bi bi-info-circle nav-icon"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                         <span class="nav-text">Bot Information</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="#system-stats" class="nav-link">
-                        <i class="bi bi-graph-up nav-icon"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
                         <span class="nav-text">System Stats</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="#settings" class="nav-link">
-                        <i class="bi bi-gear nav-icon"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
                         <span class="nav-text">Settings</span>
                     </a>
                 </li>
             </ul>
-            <div class="p-4 mt-auto text-white">
-                <div class="d-flex align-items-center">
-                    <div class="rounded-circle bg-white p-1 me-2">
-                        <i class="bi bi-robot text-dark"></i>
+            <div class="p-4 mt-auto border-t border-gray-200">
+                <div class="flex items-center">
+                    <div class="rounded-full bg-purple-100 p-2 mr-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
                     </div>
-                    <div class="nav-text w-100">
-                        <small class="d-block text-white-50">Bot Status</small>
-                        <div class="d-flex align-items-center justify-content-between">
-                            <span class="d-flex align-items-center">
-                                <span class="bg-success rounded-circle me-1" style="width: 8px; height: 8px;"></span>
-                                <span class="text-white">Online</span>
+                    <div class="nav-text w-full">
+                        <small class="block text-gray-500">Bot Status</small>
+                        <div class="flex items-center justify-between">
+                            <span class="flex items-center">
+                                <span class="bg-green-500 rounded-full mr-1" style="width: 8px; height: 8px;"></span>
+                                <span class="text-gray-700">Online</span>
                             </span>
-                            <span class="badge bg-primary" id="sidebar-uptime">0s</span>
+                            <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full" id="sidebar-uptime">0s</span>
                         </div>
                     </div>
                 </div>
@@ -420,111 +487,119 @@
 
     <!-- Toggle Button -->
     <div class="sidebar-toggle" id="sidebar-toggle">
-        <i class="bi bi-chevron-left" id="toggle-icon"></i>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" id="toggle-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
     </div>
 
     <!-- Main Content -->
     <div class="main-content" id="main-content">
-        <div class="container-fluid p-0">
+        <div class="container mx-auto p-0">
             <!-- Dashboard Section -->
-            <section id="dashboard" class="mb-5">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="h3 fw-bold">Dashboard</h1>
+            <section id="dashboard" class="mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
                     <div>
-                        <button class="btn btn-outline-primary" onclick="refreshData()">
-                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
+                        <button class="md-button-outlined mr-2" onclick="refreshData()">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Refresh Data
                         </button>
-                        <button class="btn btn-outline-danger ms-2" onclick="logout()">
-                            <i class="bi bi-box-arrow-right me-1"></i> Logout
+                        <button class="md-button-filled" onclick="logout()">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            Logout
                         </button>
                     </div>
                 </div>
 
-                <div class="row g-4 mb-4">
-                    <div class="col-md-3">
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="bi bi-people-fill"></i>
-                            </div>
-                            <div class="stat-value" id="admin-count">0</div>
-                            <div class="stat-label">Admins</div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="stat-card md-elevation-1">
+                        <div class="stat-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                        </div>
+                        <div class="stat-value" id="admin-count">0</div>
+                        <div class="stat-label">Admins</div>
+                    </div>
+                    <div class="stat-card md-elevation-1">
+                        <div class="stat-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div class="stat-value" id="command-count">0</div>
+                        <div class="stat-label">Commands</div>
+                    </div>
+                    <div class="stat-card md-elevation-1">
+                        <div class="stat-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="stat-value" id="uptime">0s</div>
+                        <div class="stat-label">Uptime</div>
+                        <div class="progress-thin mt-2 bg-gray-200">
+                            <div id="uptime-progress" class="progress-bar bg-green-500" style="width: 0%"></div>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="bi bi-terminal-fill"></i>
-                            </div>
-                            <div class="stat-value" id="command-count">0</div>
-                            <div class="stat-label">Commands</div>
+                    <div class="stat-card md-elevation-1">
+                        <div class="stat-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
                         </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="bi bi-clock-history"></i>
-                            </div>
-                            <div class="stat-value" id="uptime">0s</div>
-                            <div class="stat-label">Uptime</div>
-                            <div class="progress progress-thin mt-2">
-                                <div id="uptime-progress" class="progress-bar bg-success" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="bi bi-person-check-fill"></i>
-                            </div>
-                            <div class="stat-value" id="active-users">0</div>
-                            <div class="stat-label">Active Users</div>
-                        </div>
+                        <div class="stat-value" id="active-users">0</div>
+                        <div class="stat-label">Active Users</div>
                     </div>
                 </div>
 
-                <div class="row g-4 mb-4">
-                    <div class="col-md-8">
-                        <div class="card h-100">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">System Overview</h5>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <div class="lg:col-span-2">
+                        <div class="md-card md-elevation-1 h-full">
+                            <div class="p-6 border-b border-gray-200">
+                                <h2 class="text-lg font-semibold text-gray-900">System Overview</h2>
                             </div>
-                            <div class="card-body">
+                            <div class="p-6">
                                 <canvas id="system-overview-chart" height="250"></canvas>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="card h-100">
-                            <div class="card-header">
-                                <h5 class="mb-0">Memory Usage</h5>
+                    <div class="lg:col-span-1">
+                        <div class="md-card md-elevation-1 h-full">
+                            <div class="p-6 border-b border-gray-200">
+                                <h2 class="text-lg font-semibold text-gray-900">Memory Usage</h2>
                             </div>
-                            <div class="card-body">
+                            <div class="p-6">
                                 <div class="memory-usage">
                                     <canvas id="memory-chart"></canvas>
                                 </div>
-                                <div class="mt-3">
-                                    <div class="d-flex justify-content-between mb-1">
-                                        <span>RSS</span>
-                                        <span id="memory-rss">0 MB</span>
+                                <div class="mt-4">
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-sm text-gray-700">RSS</span>
+                                        <span id="memory-rss" class="text-sm font-medium text-gray-900">0 MB</span>
                                     </div>
-                                    <div class="progress progress-thin mb-3">
-                                        <div id="memory-rss-bar" class="progress-bar bg-primary" style="width: 0%"></div>
-                                    </div>
-                                    
-                                    <div class="d-flex justify-content-between mb-1">
-                                        <span>Heap Total</span>
-                                        <span id="memory-heap-total">0 MB</span>
-                                    </div>
-                                    <div class="progress progress-thin mb-3">
-                                        <div id="memory-heap-total-bar" class="progress-bar bg-success" style="width: 0%"></div>
+                                    <div class="progress-thin mb-3 bg-gray-200">
+                                        <div id="memory-rss-bar" class="progress-bar bg-purple-500" style="width: 0%"></div>
                                     </div>
                                     
-                                    <div class="d-flex justify-content-between mb-1">
-                                        <span>Heap Used</span>
-                                        <span id="memory-heap-used">0 MB</span>
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-sm text-gray-700">Heap Total</span>
+                                        <span id="memory-heap-total" class="text-sm font-medium text-gray-900">0 MB</span>
                                     </div>
-                                    <div class="progress progress-thin">
-                                        <div id="memory-heap-used-bar" class="progress-bar bg-warning" style="width: 0%"></div>
+                                    <div class="progress-thin mb-3 bg-gray-200">
+                                        <div id="memory-heap-total-bar" class="progress-bar bg-green-500" style="width: 0%"></div>
+                                    </div>
+                                    
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-sm text-gray-700">Heap Used</span>
+                                        <span id="memory-heap-used" class="text-sm font-medium text-gray-900">0 MB</span>
+                                    </div>
+                                    <div class="progress-thin bg-gray-200">
+                                        <div id="memory-heap-used-bar" class="progress-bar bg-yellow-500" style="width: 0%"></div>
                                     </div>
                                 </div>
                             </div>
@@ -532,113 +607,148 @@
                     </div>
                 </div>
 
-                <div class="card mb-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Command Prefix</h5>
+                <div class="md-card md-elevation-1 mb-8">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">Command Prefix</h2>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="prefix" class="form-label fw-medium">Set Command Prefix</label>
-                            <div class="input-group">
-                                <input type="text" id="prefix" class="form-control" placeholder="Enter command prefix (leave empty for no prefix)">
-                                <button class="btn btn-primary" type="button" onclick="updatePrefix()">
-                                    <i class="bi bi-check-lg me-1"></i> Update
+                    <div class="p-6">
+                        <div class="mb-4">
+                            <label for="prefix" class="block mb-2 text-sm font-medium text-gray-900">Set Command Prefix</label>
+                            <div class="flex">
+                                <input type="text" id="prefix" class="md-input mr-2" placeholder="Enter command prefix (leave empty for no prefix)">
+                                <button class="md-button-filled" type="button" onclick="updatePrefix()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Update
                                 </button>
                             </div>
-                            <div class="form-text mt-2">Current prefix: <span id="current-prefix" class="fw-semibold"></span></div>
+                            <p class="mt-2 text-sm text-gray-600">Current prefix: <span id="current-prefix" class="font-semibold"></span></p>
                         </div>
                     </div>
                 </div>
             </section>
 
             <!-- Admin Management Section -->
-            <section id="admin-management" class="mb-5" style="display: none;">
-                <h2 class="h4 fw-bold mb-4">Admin Permission Management</h2>
+            <section id="admin-management" class="mb-8" style="display: none;">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Admin Permission Management</h2>
                 
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">GitHub Integration</h5>
+                <div class="md-card md-elevation-1 mb-6">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">GitHub Integration</h3>
                     </div>
-                    <div class="card-body">
-                        <div id="github-warning" class="alert alert-info">
-                            <h4 class="alert-heading fs-5"><i class="bi bi-github me-2"></i>GitHub Configuration</h4>
-                            <p>Admin permissions are managed directly in your GitHub repository. Changes made here will update the file on GitHub.</p>
-                            <p class="mb-0">GitHub file URL: <code id="github-url" class="fw-semibold">Loading...</code></p>
-                            <div id="github-not-configured-warning" class="alert alert-danger mt-2" style="display: none;">
-                                <i class="bi bi-exclamation-triangle-fill me-2"></i> <strong>GitHub API Not Configured:</strong> The bot server is not fully set up to write changes to GitHub. Updates made here might be in-memory only and lost on restart.
+                    <div class="p-6">
+                        <div id="github-warning" class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <h4 class="text-sm font-medium text-blue-800">GitHub Configuration</h4>
+                                    <p class="text-sm text-blue-700 mt-1">Admin permissions are managed directly in your GitHub repository. Changes made here will update the file on GitHub.</p>
+                                    <p class="text-sm text-blue-700 mt-1">GitHub file URL: <code id="github-url" class="font-semibold">Loading...</code></p>
+                                </div>
+                            </div>
+                            <div id="github-not-configured-warning" class="bg-red-50 border-l-4 border-red-500 p-4 mt-4" style="display: none;">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h4 class="text-sm font-medium text-red-800">GitHub API Not Configured</h4>
+                                        <p class="text-sm text-red-700 mt-1">The bot server is not fully set up to write changes to GitHub. Updates made here might be in-memory only and lost on restart.</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="alert alert-secondary">
-                            <p class="mb-1">Required <code>admin_ids.json</code> format on GitHub (example):</p>
-                            <div class="position-relative">
-                                <pre class="code-block" id="admin-json-format">{
+                        <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                            <p class="text-sm text-gray-700 mb-2">Required <code>admin_ids.json</code> format on GitHub (example):</p>
+                            <div class="relative">
+                                <pre id="admin-json-format" class="bg-gray-800 text-gray-100 rounded-lg p-4 text-sm overflow-x-auto">{
   "ADMIN_PERMISSIONS": {
     "123456789012345678": ["fbcreatev2", "anotherCommand"],
     "987654321098765432": ["all"]
   }
 }</pre>
-                                <button class="btn btn-sm btn-light copy-btn" onclick="copyToClipboard('admin-json-format', true)">
-                                    <i class="bi bi-clipboard"></i>
+                                <button class="absolute top-2 right-2 bg-gray-700 text-white p-1 rounded hover:bg-gray-600" onclick="copyToClipboard('admin-json-format', true)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                    </svg>
                                 </button>
                             </div>
                         </div>
                         
-                        <div class="d-flex justify-content-end mb-3">
-                            <button class="btn btn-outline-primary" onclick="refreshAdminPermissionsFromServer()">
-                                <i class="bi bi-arrow-clockwise me-1"></i> Refresh from GitHub
+                        <div class="flex justify-end">
+                            <button class="md-button-outlined" onclick="refreshAdminPermissionsFromServer()">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Refresh from GitHub
                             </button>
                         </div>
                     </div>
                 </div>
                 
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Add New Admin</h5>
+                <div class="md-card md-elevation-1 mb-6">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">Add New Admin</h3>
                     </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label for="newAdminId" class="form-label">Discord User ID</label>
-                                <input type="text" id="newAdminId" class="form-control" placeholder="17-19 digit ID">
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                            <div class="md:col-span-5">
+                                <label for="newAdminId" class="block mb-2 text-sm font-medium text-gray-900">Discord User ID</label>
+                                <input type="text" id="newAdminId" class="md-input" placeholder="17-19 digit ID">
                             </div>
-                            <div class="col-md-6">
-                                <label for="newAdminPerms" class="form-label">Initial Permissions</label>
-                                <input type="text" id="newAdminPerms" class="form-control" placeholder="e.g., cmd1, cmd2 or all">
+                            <div class="md:col-span-5">
+                                <label for="newAdminPerms" class="block mb-2 text-sm font-medium text-gray-900">Initial Permissions</label>
+                                <input type="text" id="newAdminPerms" class="md-input" placeholder="e.g., cmd1, cmd2 or all">
                             </div>
-                            <div class="col-md-2 d-flex align-items-end">
-                                <button class="btn btn-primary w-100" type="button" onclick="addAdmin()">
-                                    <i class="bi bi-plus-lg me-1"></i> Add
+                            <div class="md:col-span-2 flex items-end">
+                                <button class="md-button-filled w-full" type="button" onclick="addAdmin()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                    Add
                                 </button>
                             </div>
                         </div>
-                        <div class="form-text mt-2">For permissions, use comma-separated command names or "all" for full access.</div>
+                        <p class="mt-2 text-sm text-gray-600">For permissions, use comma-separated command names or "all" for full access.</p>
                     </div>
                 </div>
                 
-                <div class="card mb-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Current Admins & Permissions</h5>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="updateAdminJsonDisplay()">
-                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                <div class="md-card md-elevation-1 mb-6">
+                    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-gray-900">Current Admins & Permissions</h3>
+                        <button class="md-button-text" onclick="updateAdminJsonDisplay()">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Refresh
                         </button>
                     </div>
-                    <div class="card-body">
-                        <div id="adminList" class="mb-3">
+                    <div class="p-6">
+                        <div id="adminList" class="mb-4">
                             <!-- Admin items will be rendered here -->
                         </div>
                     </div>
                 </div>
                 
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Export Current Admin Permissions (JSON)</h5>
+                <div class="md-card md-elevation-1">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">Export Current Admin Permissions (JSON)</h3>
                     </div>
-                    <div class="card-body">
-                        <div class="position-relative">
-                            <pre class="code-block" id="current-admin-json"></pre>
-                            <button class="btn btn-sm btn-light copy-btn" onclick="copyToClipboard('current-admin-json', true)">
-                                <i class="bi bi-clipboard"></i>
+                    <div class="p-6">
+                        <div class="relative">
+                            <pre id="current-admin-json" class="bg-gray-800 text-gray-100 rounded-lg p-4 text-sm overflow-x-auto"></pre>
+                            <button class="absolute top-2 right-2 bg-gray-700 text-white p-1 rounded hover:bg-gray-600" onclick="copyToClipboard('current-admin-json', true)">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                </svg>
                             </button>
                         </div>
                     </div>
@@ -646,92 +756,96 @@
             </section>
             
             <!-- Bot Information Section -->
-            <section id="bot-info" class="mb-5" style="display: none;">
-                <h2 class="h4 fw-bold mb-4">Bot Information</h2>
+            <section id="bot-info" class="mb-8" style="display: none;">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Bot Information</h2>
                 
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <div class="card h-100">
-                            <div class="card-header">
-                                <h5 class="mb-0">Commands</h5>
-                            </div>
-                            <div class="card-body">
-                                <p class="card-text mb-3" id="command-count-details">Loading...</p>
-                                <div id="admin-commands-list-display" class="mt-3" style="max-height: 200px; overflow-y: auto;">
-                                    <small class="text-muted">Admin commands will be listed here.</small>
-                                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md-card md-elevation-1 h-full">
+                        <div class="p-6 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900">Commands</h3>
+                        </div>
+                        <div class="p-6">
+                            <p id="command-count-details" class="mb-4 text-gray-700">Loading...</p>
+                            <div id="admin-commands-list-display" class="mt-4 max-h-60 overflow-y-auto">
+                                <p class="text-sm text-gray-500">Admin commands will be listed here.</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="card h-100">
-                            <div class="card-header">
-                                <h5 class="mb-0">System Status</h5>
+                    <div class="md-card md-elevation-1 h-full">
+                        <div class="p-6 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900">System Status</h3>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex items-center mb-6">
+                                <div class="mr-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-700">Uptime</h4>
+                                    <p id="uptime-detail" class="text-xl font-bold text-gray-900">Loading...</p>
+                                </div>
                             </div>
-                            <div class="card-body">
-                                <div class="d-flex align-items-center mb-3">
-                                    <div class="me-3">
-                                        <i class="bi bi-clock-history text-primary" style="font-size: 2rem;"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0">Uptime</h6>
-                                        <p class="mb-0 fs-5 fw-bold" id="uptime-detail">Loading...</p>
-                                    </div>
+                            <div class="flex items-center mb-6">
+                                <div class="mr-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
                                 </div>
-                                <div class="d-flex align-items-center mb-3">
-                                    <div class="me-3">
-                                        <i class="bi bi-terminal text-primary" style="font-size: 2rem;"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0">Commands Executed</h6>
-                                        <p class="mb-0 fs-5 fw-bold" id="commands-executed">0</p>
-                                    </div>
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-700">Commands Executed</h4>
+                                    <p id="commands-executed" class="text-xl font-bold text-gray-900">0</p>
                                 </div>
-                                <div class="d-flex align-items-center">
-                                    <div class="me-3">
-                                        <i class="bi bi-hdd-network text-primary" style="font-size: 2rem;"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0">Server Status</h6>
-                                        <p class="mb-0">
-                                            <span class="badge bg-success">Online</span>
-                                        </p>
-                                    </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="mr-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-700">Server Status</h4>
+                                    <p class="text-xl font-bold text-gray-900">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Online
+                                        </span>
+                                    </p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="card mt-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Last Activity</h5>
+                <div class="md-card md-elevation-1 mt-6">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">Last Activity</h3>
                     </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
+                    <div class="p-6">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
                                     <tr>
-                                        <th>Metric</th>
-                                        <th>Value</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metric</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody class="bg-white divide-y divide-gray-200">
                                     <tr>
-                                        <td>Last Command</td>
-                                        <td id="last-command-time">Never</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Last Command</td>
+                                        <td id="last-command-time" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Never</td>
                                     </tr>
                                     <tr>
-                                        <td>Active Users</td>
-                                        <td id="active-users-detail">0</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Active Users</td>
+                                        <td id="active-users-detail" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">0</td>
                                     </tr>
                                     <tr>
-                                        <td>Error Count</td>
-                                        <td id="error-count">0</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Error Count</td>
+                                        <td id="error-count" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">0</td>
                                     </tr>
                                     <tr>
-                                        <td>Server Start Time</td>
-                                        <td id="server-start-time">Unknown</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Server Start Time</td>
+                                        <td id="server-start-time" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Unknown</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -741,86 +855,84 @@
             </section>
             
             <!-- System Stats Section -->
-            <section id="system-stats" class="mb-5" style="display: none;">
-                <h2 class="h4 fw-bold mb-4">System Statistics</h2>
+            <section id="system-stats" class="mb-8" style="display: none;">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">System Statistics</h2>
                 
-                <div class="row g-4">
-                    <div class="col-md-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0">Memory Usage Over Time</h5>
-                            </div>
-                            <div class="card-body">
-                                <canvas id="memory-history-chart" height="250"></canvas>
-                            </div>
-                        </div>
+                <div class="md-card md-elevation-1 mb-6">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">Memory Usage Over Time</h3>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="memory-history-chart" height="250"></canvas>
                     </div>
                 </div>
                 
-                <div class="row g-4 mt-2">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0">System Information</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <tbody>
-                                            <tr>
-                                                <td>Node.js Version</td>
-                                                <td id="nodejs-version">Loading...</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Platform</td>
-                                                <td id="platform">Loading...</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Architecture</td>
-                                                <td id="architecture">Loading...</td>
-                                            </tr>
-                                            <tr>
-                                                <td>CPU Cores</td>
-                                                <td id="cpu-cores">Loading...</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Total Memory</td>
-                                                <td id="total-memory">Loading...</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md-card md-elevation-1">
+                        <div class="p-6 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900">System Information</h3>
+                        </div>
+                        <div class="p-6">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Node.js Version</td>
+                                            <td id="nodejs-version" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Loading...</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Platform</td>
+                                            <td id="platform" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Loading...</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Architecture</td>
+                                            <td id="architecture" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Loading...</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">CPU Cores</td>
+                                            <td id="cpu-cores" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Loading...</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Total Memory</td>
+                                            <td id="total-memory" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0">Performance Metrics</h5>
+                    <div class="md-card md-elevation-1">
+                        <div class="p-6 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900">Performance Metrics</h3>
+                        </div>
+                        <div class="p-6">
+                            <div class="mb-4">
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm text-gray-700">Memory Usage</span>
+                                    <span id="memory-usage-percent" class="text-sm font-medium text-gray-900">0%</span>
+                                </div>
+                                <div class="progress-thin bg-gray-200">
+                                    <div id="memory-usage-bar" class="progress-bar bg-purple-500" style="width: 0%"></div>
+                                </div>
                             </div>
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>Memory Usage</span>
-                                    <span id="memory-usage-percent">0%</span>
+                            
+                            <div class="mb-4">
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm text-gray-700">Heap Usage</span>
+                                    <span id="heap-usage-percent" class="text-sm font-medium text-gray-900">0%</span>
                                 </div>
-                                <div class="progress progress-thin mb-3">
-                                    <div id="memory-usage-bar" class="progress-bar bg-primary" style="width: 0%"></div>
+                                <div class="progress-thin bg-gray-200">
+                                    <div id="heap-usage-bar" class="progress-bar bg-green-500" style="width: 0%"></div>
                                 </div>
-                                
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>Heap Usage</span>
-                                    <span id="heap-usage-percent">0%</span>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-sm text-gray-700">Command Execution Rate</span>
+                                    <span id="command-rate" class="text-sm font-medium text-gray-900">0/min</span>
                                 </div>
-                                <div class="progress progress-thin mb-3">
-                                    <div id="heap-usage-bar" class="progress-bar bg-success" style="width: 0%"></div>
-                                </div>
-                                
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>Command Execution Rate</span>
-                                    <span id="command-rate">0/min</span>
-                                </div>
-                                <div class="progress progress-thin">
-                                    <div id="command-rate-bar" class="progress-bar bg-warning" style="width: 0%"></div>
+                                <div class="progress-thin bg-gray-200">
+                                    <div id="command-rate-bar" class="progress-bar bg-yellow-500" style="width: 0%"></div>
                                 </div>
                             </div>
                         </div>
@@ -829,17 +941,17 @@
             </section>
             
             <!-- Settings Section -->
-            <section id="settings" class="mb-5" style="display: none;">
-                <h2 class="h4 fw-bold mb-4">Settings</h2>
+            <section id="settings" class="mb-8" style="display: none;">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Settings</h2>
                 
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Admin Panel Settings</h5>
+                <div class="md-card md-elevation-1 mb-6">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">Admin Panel Settings</h3>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Auto-Refresh Interval</label>
-                            <select id="refresh-interval" class="form-select">
+                    <div class="p-6">
+                        <div class="mb-4">
+                            <label for="refresh-interval" class="block mb-2 text-sm font-medium text-gray-900">Auto-Refresh Interval</label>
+                            <select id="refresh-interval" class="md-input">
                                 <option value="0">Manual refresh only</option>
                                 <option value="5000">Every 5 seconds</option>
                                 <option value="10000">Every 10 seconds</option>
@@ -848,9 +960,9 @@
                             </select>
                         </div>
                         
-                        <div class="mb-3">
-                            <label class="form-label">Session Timeout</label>
-                            <select id="session-timeout" class="form-select">
+                        <div class="mb-4">
+                            <label for="session-timeout" class="block mb-2 text-sm font-medium text-gray-900">Session Timeout</label>
+                            <select id="session-timeout" class="md-input">
                                 <option value="3600000">1 hour</option>
                                 <option value="7200000">2 hours</option>
                                 <option value="14400000">4 hours</option>
@@ -859,39 +971,53 @@
                             </select>
                         </div>
                         
-                        <button class="btn btn-primary" onclick="saveSettings()">
-                            <i class="bi bi-save me-1"></i> Save Settings
+                        <button class="md-button-filled" onclick="saveSettings()">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                            </svg>
+                            Save Settings
                         </button>
                     </div>
                 </div>
                 
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Change Admin Token</h5>
+                <div class="md-card md-elevation-1">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">Change Admin Token</h3>
                     </div>
-                    <div class="card-body">
-                        <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            Changing the admin token will immediately log out all current sessions. Make sure to remember your new token!
+                    <div class="p-6">
+                        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-yellow-700">Changing the admin token will immediately log out all current sessions. Make sure to remember your new token!</p>
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="current-token" class="form-label">Current Admin Token</label>
-                            <input type="password" id="current-token" class="form-control" placeholder="Enter current token">
+                        <div class="mb-4">
+                            <label for="current-token" class="block mb-2 text-sm font-medium text-gray-900">Current Admin Token</label>
+                            <input type="password" id="current-token" class="md-input" placeholder="Enter current token">
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="new-token" class="form-label">New Admin Token</label>
-                            <input type="password" id="new-token" class="form-control" placeholder="Enter new token">
+                        <div class="mb-4">
+                            <label for="new-token" class="block mb-2 text-sm font-medium text-gray-900">New Admin Token</label>
+                            <input type="password" id="new-token" class="md-input" placeholder="Enter new token">
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="confirm-token" class="form-label">Confirm New Token</label>
-                            <input type="password" id="confirm-token" class="form-control" placeholder="Confirm new token">
+                        <div class="mb-4">
+                            <label for="confirm-token" class="block mb-2 text-sm font-medium text-gray-900">Confirm New Token</label>
+                            <input type="password" id="confirm-token" class="md-input" placeholder="Confirm new token">
                         </div>
                         
-                        <button class="btn btn-danger" onclick="changeAdminToken()">
-                            <i class="bi bi-key-fill me-1"></i> Change Token
+                        <button class="md-button-filled bg-red-600 hover:bg-red-700" onclick="changeAdminToken()">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                            </svg>
+                            Change Token
                         </button>
                     </div>
                 </div>
@@ -899,41 +1025,13 @@
         </div>
     </div>
 
-    <!-- Edit Admin Permissions Modal -->
-    <div class="modal fade" id="editAdminModal" tabindex="-1" aria-labelledby="editAdminModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editAdminModalLabel">Edit Permissions for Admin</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="editingAdminId">
-                    <p>Admin ID: <strong id="modalAdminIdDisplay"></strong></p>
-                    
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" role="switch" id="grantAllPermissionsSwitch" onchange="toggleCommandSelection()">
-                        <label class="form-check-label" for="grantAllPermissionsSwitch">Grant All Permissions ("all")</label>
-                    </div>
+    <!-- Notification container will be added by notification-ui.js -->
 
-                    <div id="specificCommandsSection">
-                        <h6>Assign Specific Admin Commands:</h6>
-                        <div id="admin-commands-list-modal" class="list-group list-group-flush border rounded p-3" style="max-height: 250px; overflow-y: auto;">
-                            <!-- Checkboxes for commands will be populated here -->
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="saveAdminPermissionsFromModal()">Save Changes</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script>
+    <script type="module">
+        import notificationSystem from './notification-system.js';
+        import { initNotificationUI, showToast } from './notification-ui.js';
+        import { initAdminPermissionDialog, openAdminPermissionDialog } from './admin-permission-dialog.js';
+        
         // Global variables
         let currentConfig = {
             PREFIX: "",
@@ -942,7 +1040,6 @@
             GITHUB_CONFIGURED: false
         };
         let allBotCommands = [];
-        let editAdminModalInstance = null;
         let systemStats = {};
         let sidebarCollapsed = false;
         let refreshInterval = 30000; // Default refresh interval: 30 seconds
@@ -997,7 +1094,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             if (!checkAuthentication()) return;
             
-            editAdminModalInstance = new bootstrap.Modal(document.getElementById('editAdminModal'));
+            // Initialize notification system
+            initNotificationUI();
+            
+            // Initialize admin permission dialog
+            initAdminPermissionDialog([], {}, saveAdminPermissions);
             
             // Setup navigation
             document.querySelectorAll('.nav-link').forEach(link => {
@@ -1038,6 +1139,9 @@
             if (refreshInterval > 0) {
                 refreshTimer = setInterval(refreshData, refreshInterval);
             }
+            
+            // Show welcome notification
+            showToast('Welcome', 'Admin panel loaded successfully', 'success', true);
         });
         
         function initializeCharts() {
@@ -1049,7 +1153,7 @@
                     labels: ['Heap Used', 'Heap Available', 'Other Memory'],
                     datasets: [{
                         data: [0, 0, 0],
-                        backgroundColor: ['#FAA61A', '#43B581', '#5865F2']
+                        backgroundColor: ['#EADDFF', '#6750A4', '#79747E']
                     }]
                 },
                 options: {
@@ -1073,8 +1177,8 @@
                     datasets: [{
                         label: 'Commands Executed',
                         data: [],
-                        borderColor: '#5865F2',
-                        backgroundColor: 'rgba(88, 101, 242, 0.1)',
+                        borderColor: '#6750A4',
+                        backgroundColor: 'rgba(103, 80, 164, 0.1)',
                         tension: 0.3,
                         fill: true
                     }]
@@ -1099,22 +1203,22 @@
                         {
                             label: 'RSS',
                             data: [],
-                            borderColor: '#5865F2',
-                            backgroundColor: 'rgba(88, 101, 242, 0.1)',
+                            borderColor: '#6750A4',
+                            backgroundColor: 'rgba(103, 80, 164, 0.1)',
                             tension: 0.3
                         },
                         {
                             label: 'Heap Total',
                             data: [],
-                            borderColor: '#43B581',
-                            backgroundColor: 'rgba(67, 181, 129, 0.1)',
+                            borderColor: '#7965AF',
+                            backgroundColor: 'rgba(121, 101, 175, 0.1)',
                             tension: 0.3
                         },
                         {
                             label: 'Heap Used',
                             data: [],
-                            borderColor: '#FAA61A',
-                            backgroundColor: 'rgba(250, 166, 26, 0.1)',
+                            borderColor: '#9A82DB',
+                            backgroundColor: 'rgba(154, 130, 219, 0.1)',
                             tension: 0.3
                         }
                     ]
@@ -1218,13 +1322,78 @@
                 }
                 
                 hideLoading();
+                showToast('Data Refreshed', 'Dashboard data has been updated', 'info');
             } catch (error) {
                 console.error('Error refreshing data:', error);
-                showToast('Error', 'Failed to refresh data: ' + error.message, false);
+                showToast('Error', 'Failed to refresh data: ' + error.message, 'error');
                 hideLoading();
             }
         }
 
+        function updateSystemStats() {
+            if (!systemStats) return;
+            
+            // Update dashboard stats
+            document.getElementById('admin-count').textContent = systemStats.adminCount || 0;
+            document.getElementById('command-count').textContent = systemStats.commandCount || 0;
+            document.getElementById('uptime').textContent = systemStats.uptimeFormatted || '0s';
+            document.getElementById('sidebar-uptime').textContent = systemStats.uptimeFormatted || '0s';
+            document.getElementById('active-users').textContent = systemStats.activeUsers || 0;
+            document.getElementById('active-users-detail').textContent = systemStats.activeUsers || 0;
+            document.getElementById('commands-executed').textContent = systemStats.commandsExecuted || 0;
+            document.getElementById('error-count').textContent = systemStats.errors || 0;
+            
+            // Format and display last command time
+            if (systemStats.lastCommandTime) {
+                const lastCmdTime = new Date(systemStats.lastCommandTime);
+                document.getElementById('last-command-time').textContent = lastCmdTime.toLocaleString();
+            } else {
+                document.getElementById('last-command-time').textContent = 'Never';
+            }
+            
+            // Format and display server start time
+            if (systemStats.serverStartTime) {
+                const startTime = new Date(systemStats.serverStartTime);
+                document.getElementById('server-start-time').textContent = startTime.toLocaleString();
+                document.getElementById('uptime-detail').textContent = systemStats.uptimeFormatted || '0s';
+                
+                // Start the uptime counter if it hasn't been started yet
+                if (!window.uptimeCounterStarted) {
+                    startUptimeCounter();
+                    window.uptimeCounterStarted = true;
+                }
+            } else {
+                document.getElementById('server-start-time').textContent = 'Unknown';
+            }
+            
+            // Update memory stats
+            if (systemStats.memory) {
+                document.getElementById('memory-rss').textContent = `${systemStats.memory.rss} MB`;
+                document.getElementById('memory-heap-total').textContent = `${systemStats.memory.heapTotal} MB`;
+                document.getElementById('memory-heap-used').textContent = `${systemStats.memory.heapUsed} MB`;
+                
+                // Update progress bars (assuming 8GB total memory for percentage calculation)
+                const totalMemory = 8 * 1024; // 8GB in MB
+                const rssPercent = (systemStats.memory.rss / totalMemory) * 100;
+                const heapTotalPercent = (systemStats.memory.heapTotal / totalMemory) * 100;
+                const heapUsedPercent = (systemStats.memory.heapUsed / systemStats.memory.heapTotal) * 100;
+                
+                document.getElementById('memory-rss-bar').style.width = `${Math.min(rssPercent, 100)}%`;
+                document.getElementById('memory-heap-total-bar').style.width = `${Math.min(heapTotalPercent, 100)}%`;
+                document.getElementById('memory-heap-used-bar').style.width = `${Math.min(heapUsedPercent, 100)}%`;
+                
+                // Update performance metrics
+                document.getElementById('memory-usage-percent').textContent = `${Math.round(rssPercent)}%`;
+                document.getElementById('memory-usage-bar').style.width = `${Math.min(rssPercent, 100)}%`;
+                
+                document.getElementById('heap-usage-percent').textContent = `${Math.round(heapUsedPercent)}%`;
+                document.getElementById('heap-usage-bar').style.width = `${Math.min(heapUsedPercent, 100)}%`;
+            }
+            
+            // Update charts
+            updateCharts();
+        }
+        
         // Add this new function for real-time uptime counter
         function startUptimeCounter() {
             if (!systemStats || !systemStats.serverStartTime) return;
@@ -1247,24 +1416,6 @@
                 document.getElementById('uptime-progress').style.width = `${dayProgress}%`;
             }, 1000);
         }
-
-        // Modify the updateSystemStats function to call startUptimeCounter
-        function updateSystemStats() {
-            // Update dashboard stats
-            document.getElementById('admin-count').textContent = systemStats.adminCount || 0;
-            document.getElementById('command-count').textContent = systemStats.commandCount || 0;
-            document.getElementById('uptime').textContent = systemStats.uptimeFormatted || '0s';
-            document.getElementById('sidebar-uptime').textContent = systemStats.uptimeFormatted || '0s';
-            document.getElementById('active-users').textContent = systemStats.activeUsers || 0;
-            
-            // Start the uptime counter if it hasn't been started yet
-            if (!window.uptimeCounterStarted && systemStats.serverStartTime) {
-                startUptimeCounter();
-                window.uptimeCounterStarted = true;
-            }
-            
-            // Rest of the function remains the same...
-        }
         
         function updateConfigDisplay() {
             document.getElementById('prefix').value = currentConfig.PREFIX || "";
@@ -1286,17 +1437,17 @@
             adminCmdDisplayEl.innerHTML = ''; 
             
             if(adminOnlyCommands.length > 0) {
-                const listGroup = document.createElement('div');
-                listGroup.className = 'row g-2';
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2';
                 adminOnlyCommands.forEach(cmd => {
-                    const listItem = document.createElement('div');
-                    listItem.className = 'col-md-6 col-lg-4';
-                    listItem.innerHTML = `<span class="badge bg-secondary text-wrap d-block p-2">${cmd.name}</span>`;
-                    listGroup.appendChild(listItem);
+                    const cmdItem = document.createElement('div');
+                    cmdItem.className = 'px-3 py-2 bg-purple-100 text-purple-800 rounded-lg text-sm font-medium';
+                    cmdItem.textContent = cmd.name;
+                    grid.appendChild(cmdItem);
                 });
-                adminCmdDisplayEl.appendChild(listGroup);
+                adminCmdDisplayEl.appendChild(grid);
             } else {
-                adminCmdDisplayEl.innerHTML = '<div class="alert alert-info">No admin-only commands found.</div>';
+                adminCmdDisplayEl.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg text-gray-500 text-sm">No admin-only commands found.</div>';
             }
         }
         
@@ -1310,13 +1461,11 @@
             if (sidebarCollapsed) {
                 sidebar.classList.add('sidebar-collapsed');
                 mainContent.classList.add('main-content-expanded');
-                toggleIcon.classList.remove('bi-chevron-left');
-                toggleIcon.classList.add('bi-chevron-right');
+                toggleIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />';
             } else {
                 sidebar.classList.remove('sidebar-collapsed');
                 mainContent.classList.remove('main-content-expanded');
-                toggleIcon.classList.remove('bi-chevron-right');
-                toggleIcon.classList.add('bi-chevron-left');
+                toggleIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />';
             }
         }
         
@@ -1329,8 +1478,8 @@
             const element = document.getElementById(elementId);
             const textToCopy = isPreformatted ? element.textContent : element.value;
             navigator.clipboard.writeText(textToCopy)
-                .then(() => showToast('Success', 'Copied to clipboard!', true))
-                .catch(err => showToast('Error', 'Failed to copy: ' + err, false));
+                .then(() => showToast('Copied', 'Text copied to clipboard', 'success'))
+                .catch(err => showToast('Error', 'Failed to copy: ' + err, 'error'));
         }
         
         async function refreshAdminPermissionsFromServer() {
@@ -1343,12 +1492,12 @@
                     currentConfig.ADMIN_PERMISSIONS = data.ADMIN_PERMISSIONS;
                     renderAdminList();
                     updateAdminJsonDisplay();
-                    showToast('Success', data.message || 'Admin permissions refreshed from GitHub.', true);
+                    showToast('Success', data.message || 'Admin permissions refreshed from GitHub.', 'success');
                 } else {
-                    showToast('Error', 'Error refreshing admin permissions: ' + (data.message || data.error), false);
+                    showToast('Error', 'Error refreshing admin permissions: ' + (data.message || data.error), 'error');
                 }
             } catch (error) {
-                showToast('Error', 'Network error refreshing admin permissions: ' + error.message, false);
+                showToast('Error', 'Network error refreshing admin permissions: ' + error.message, 'error');
             } finally {
                 hideLoading();
             }
@@ -1359,107 +1508,156 @@
             adminListEl.innerHTML = '';
             
             if (!currentConfig.ADMIN_PERMISSIONS || Object.keys(currentConfig.ADMIN_PERMISSIONS).length === 0) {
-                adminListEl.innerHTML = '<div class="alert alert-info">No admins configured. Add admin IDs and their permissions.</div>';
+                adminListEl.innerHTML = '<div class="p-4 bg-gray-50 rounded-lg text-gray-500 text-sm">No admins configured. Add admin IDs and their permissions.</div>';
                 return;
             }
             
             for (const adminId in currentConfig.ADMIN_PERMISSIONS) {
                 const permissions = currentConfig.ADMIN_PERMISSIONS[adminId];
                 const item = document.createElement('div');
-                item.className = 'admin-item mb-3';
+                item.className = 'admin-item mb-4';
                 
                 let permsDisplay = '';
                 if (permissions.includes('all')) {
-                    permsDisplay = '<span class="badge badge-all permission-badge text-wrap">All Permissions</span>';
+                    permsDisplay = '<span class="md-chip md-chip-filled mr-2 mb-2">All Permissions</span>';
                 } else if (permissions.length > 0) {
-                    permsDisplay = permissions.map(p => `<span class="badge badge-command permission-badge text-wrap">${p}</span>`).join(' ');
+                    permsDisplay = permissions.map(p => `<span class="md-chip mr-2 mb-2">${p}</span>`).join('');
                 } else {
-                    permsDisplay = '<span class="badge bg-warning text-dark permission-badge text-wrap">No Specific Permissions</span>';
+                    permsDisplay = '<span class="md-chip bg-yellow-100 text-yellow-800 mr-2 mb-2">No Specific Permissions</span>';
                 }
 
                 item.innerHTML = `
-                    <div class="d-flex flex-wrap justify-content-between align-items-center">
-                        <div class="me-3 mb-2 mb-md-0">
-                            <div class="d-flex align-items-center mb-2">
-                                <span class="badge badge-admin me-2">Admin</span>
-                                <strong class="font-monospace">${adminId}</strong>
+                    <div class="flex flex-wrap justify-between items-center">
+                        <div class="mr-4 mb-3 mb-md-0">
+                            <div class="flex items-center mb-2">
+                                <span class="bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded-full mr-2">Admin</span>
+                                <strong class="font-mono">${adminId}</strong>
                             </div>
-                            <div class="mt-2">${permsDisplay}</div>
+                            <div class="mt-2 flex flex-wrap">${permsDisplay}</div>
                         </div>
-                        <div class="btn-group btn-group-sm" role="group">
-                            <button class="btn btn-outline-primary" onclick="openEditAdminModal('${adminId}')">
-                                <i class="bi bi-pencil-square me-1"></i> Edit
+                        <div class="flex space-x-2">
+                            <button class="md-button-outlined" onclick="openEditAdminPermissionDialog('${adminId}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Edit
                             </button>
-                            <button class="btn btn-outline-danger" onclick="removeAdmin('${adminId}')">
-                                <i class="bi bi-trash me-1"></i> Remove
+                            <button class="md-button-outlined bg-red-50 text-red-600 border-red-200 hover:bg-red-100" onclick="removeAdmin('${adminId}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Remove
                             </button>
                         </div>
                     </div>`;
                 adminListEl.appendChild(item);
             }
         }
-
-        function openEditAdminModal(adminId) {
+        
+        function openEditAdminPermissionDialog(adminId) {
             const permissions = currentConfig.ADMIN_PERMISSIONS[adminId] || [];
-            document.getElementById('editingAdminId').value = adminId;
-            document.getElementById('modalAdminIdDisplay').textContent = adminId;
-
-            const grantAllSwitch = document.getElementById('grantAllPermissionsSwitch');
-            grantAllSwitch.checked = permissions.includes('all');
-
-            const commandsListModalEl = document.getElementById('admin-commands-list-modal');
-            commandsListModalEl.innerHTML = ''; 
+            openAdminPermissionDialog(adminId, allBotCommands, permissions);
+        }
+        
+        function saveAdminPermissions(adminId, permissions) {
+            const newAdminConfig = { ...currentConfig.ADMIN_PERMISSIONS };
+            newAdminConfig[adminId] = permissions;
             
-            const adminOnlyCommands = allBotCommands.filter(cmd => cmd.admin_only);
-            if (adminOnlyCommands.length === 0) {
-                commandsListModalEl.innerHTML = '<p class="text-muted">No admin-specific commands available to assign.</p>';
-            } else {
-                adminOnlyCommands.forEach(cmd => {
-                    const isChecked = permissions.includes(cmd.name);
-                    const commandDiv = document.createElement('div');
-                    commandDiv.className = 'form-check';
-                    commandDiv.innerHTML = `
-                        <input class="form-check-input" type="checkbox" value="${cmd.name}" id="cmd-${cmd.name}-${adminId}" ${isChecked ? 'checked' : ''}>
-                        <label class="form-check-label" for="cmd-${cmd.name}-${adminId}">
-                            ${cmd.name}
-                        </label>
-                    `;
-                    commandsListModalEl.appendChild(commandDiv);
+            updateAdminPermissionsOnServer(newAdminConfig)
+                .then(() => {
+                    showToast('Success', 'Admin permissions updated successfully', 'success');
+                })
+                .catch(error => {
+                    showToast('Error', 'Failed to update admin permissions: ' + error.message, 'error');
                 });
-            }
-            toggleCommandSelection(); 
-            editAdminModalInstance.show();
         }
-
-        function toggleCommandSelection() {
-            const grantAll = document.getElementById('grantAllPermissionsSwitch').checked;
-            const specificCommandsSection = document.getElementById('specificCommandsSection');
-            specificCommandsSection.style.display = grantAll ? 'none' : 'block';
-        }
-
-        async function saveAdminPermissionsFromModal() {
-            const adminId = document.getElementById('editingAdminId').value;
-            const grantAll = document.getElementById('grantAllPermissionsSwitch').checked;
-            let newPermissions = [];
-
-            if (grantAll) {
-                newPermissions.push('all');
-            } else {
-                const commandCheckboxes = document.querySelectorAll('#admin-commands-list-modal .form-check-input:checked');
-                commandCheckboxes.forEach(checkbox => newPermissions.push(checkbox.value));
+        
+        async function updateAdminPermissionsOnServer(newAdminPermsObject) {
+            if (!currentConfig.GITHUB_CONFIGURED) {
+                showToast('Warning', 'GitHub API not configured on server. Changes may not persist after restart.', 'warning');
             }
-            if (newPermissions.length === 0 && !grantAll) {
-                 showToast('Warning', 'No specific permissions selected. Admin will have no command access unless "Grant All" is checked.', false);
+
+            showLoading();
+            
+            try {
+                const response = await fetchWithAuth('/api/admin-permissions/update', {
+                    method: 'POST',
+                    body: JSON.stringify({ admin_permissions: newAdminPermsObject })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentConfig.ADMIN_PERMISSIONS = data.ADMIN_PERMISSIONS || newAdminPermsObject;
+                    renderAdminList();
+                    updateAdminJsonDisplay();
+                    hideLoading();
+                    return data;
+                } else {
+                    hideLoading();
+                    throw new Error(data.message || data.error || 'Unknown error updating permissions');
+                }
+            } catch (error) {
+                hideLoading();
+                throw error;
+            }
+        }
+        
+        async function addAdmin() {
+            const newAdminIdInput = document.getElementById('newAdminId');
+            const newAdminPermsInput = document.getElementById('newAdminPerms');
+            const adminId = newAdminIdInput.value.trim();
+            const permsStr = newAdminPermsInput.value.trim();
+            
+            if (!adminId) {
+                showToast('Validation Error', 'Please enter a valid Discord User ID', 'error');
+                return;
+            }
+            if (!/^\d{17,19}$/.test(adminId)) {
+                showToast('Validation Error', 'Invalid Discord ID format. IDs are 17-19 digits long.', 'error');
+                return;
+            }
+            if (currentConfig.ADMIN_PERMISSIONS.hasOwnProperty(adminId)) {
+                showToast('Validation Error', 'This admin ID already exists. Edit their permissions instead.', 'error');
+                return;
+            }
+            if (!permsStr) {
+                showToast('Validation Error', 'Please enter initial permissions (e.g., command names or "all").', 'error');
+                return;
+            }
+            
+            const permissionsArray = permsStr.split(',').map(p => p.trim()).filter(p => p.length > 0);
+            if (permissionsArray.length === 0) {
+                showToast('Validation Error', 'Permissions cannot be empty. Use "all" or command names.', 'error');
+                return;
             }
 
             const newAdminConfig = { ...currentConfig.ADMIN_PERMISSIONS };
-            newAdminConfig[adminId] = newPermissions;
+            newAdminConfig[adminId] = permissionsArray;
 
             try {
                 await updateAdminPermissionsOnServer(newAdminConfig);
-                editAdminModalInstance.hide();
+                newAdminIdInput.value = '';
+                newAdminPermsInput.value = '';
+                showToast('Success', `Admin ${adminId} added successfully`, 'success');
             } catch (err) {
-                console.error("Failed to save admin permissions from modal:", err);
+                showToast('Error', `Failed to add admin: ${err.message}`, 'error');
+            }
+        }
+        
+        async function removeAdmin(adminIdToRemove) {
+            if (!confirm(`Are you sure you want to remove admin ID ${adminIdToRemove}? This will update the file on GitHub.`)) {
+                return;
+            }
+            
+            const newAdminConfig = { ...currentConfig.ADMIN_PERMISSIONS };
+            delete newAdminConfig[adminIdToRemove];
+            
+            try {
+                await updateAdminPermissionsOnServer(newAdminConfig);
+                showToast('Success', `Admin ${adminIdToRemove} removed successfully`, 'success');
+            } catch (err) {
+                showToast('Error', `Failed to remove admin: ${err.message}`, 'error');
             }
         }
         
@@ -1478,106 +1676,14 @@
                 if (data.success) {
                     currentConfig.PREFIX = newPrefix;
                     document.getElementById('current-prefix').textContent = newPrefix ? `"${newPrefix}"` : "None (empty)";
-                    showToast('Success', data.message || 'Prefix updated successfully!', true);
+                    showToast('Success', data.message || 'Prefix updated successfully!', 'success');
                 } else {
-                    showToast('Error', 'Error updating prefix: ' + (data.message || data.error), false);
+                    showToast('Error', 'Error updating prefix: ' + (data.message || data.error), 'error');
                 }
             } catch (error) {
-                showToast('Error', 'Network error updating prefix: ' + error.message, false);
+                showToast('Error', 'Network error updating prefix: ' + error.message, 'error');
             } finally {
                 hideLoading();
-            }
-        }
-
-        async function updateAdminPermissionsOnServer(newAdminPermsObject) {
-            if (!currentConfig.GITHUB_CONFIGURED) {
-                showToast('Error', 'GitHub API not configured on server. Cannot save changes to GitHub.', false);
-                return Promise.reject(new Error("GitHub not configured"));
-            }
-
-            showLoading();
-            
-            try {
-                const response = await fetchWithAuth('/api/admin-permissions/update', {
-                    method: 'POST',
-                    body: JSON.stringify({ admin_permissions: newAdminPermsObject })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    currentConfig.ADMIN_PERMISSIONS = data.ADMIN_PERMISSIONS || newAdminPermsObject;
-                    renderAdminList();
-                    updateAdminJsonDisplay();
-                    showToast('Success', data.message || 'Admin permissions updated on GitHub!', true);
-                    return data;
-                } else {
-                    showToast('Error', 'Error updating admin permissions on GitHub: ' + (data.message || data.error), false);
-                    await refreshData();
-                    throw new Error(data.message || data.error);
-                }
-            } catch (error) {
-                showToast('Error', 'Network error updating admin permissions: ' + error.message, false);
-                await refreshData();
-                throw error;
-            } finally {
-                hideLoading();
-            }
-        }
-
-        async function addAdmin() {
-            const newAdminIdInput = document.getElementById('newAdminId');
-            const newAdminPermsInput = document.getElementById('newAdminPerms');
-            const adminId = newAdminIdInput.value.trim();
-            const permsStr = newAdminPermsInput.value.trim();
-            
-            if (!adminId) {
-                showToast('Validation Error', 'Please enter a valid Discord User ID', false);
-                return;
-            }
-            if (!/^\d{17,19}$/.test(adminId)) {
-                showToast('Validation Error', 'Invalid Discord ID format. IDs are 17-19 digits long.', false);
-                return;
-            }
-            if (currentConfig.ADMIN_PERMISSIONS.hasOwnProperty(adminId)) {
-                showToast('Validation Error', 'This admin ID already exists. Edit their permissions instead.', false);
-                return;
-            }
-            if (!permsStr) {
-                showToast('Validation Error', 'Please enter initial permissions (e.g., command names or "all").', false);
-                return;
-            }
-            
-            const permissionsArray = permsStr.split(',').map(p => p.trim()).filter(p => p.length > 0);
-            if (permissionsArray.length === 0) {
-                 showToast('Validation Error', 'Permissions cannot be empty. Use "all" or command names.', false);
-                return;
-            }
-
-            const newAdminConfig = { ...currentConfig.ADMIN_PERMISSIONS };
-            newAdminConfig[adminId] = permissionsArray;
-
-            try {
-                await updateAdminPermissionsOnServer(newAdminConfig);
-                newAdminIdInput.value = '';
-                newAdminPermsInput.value = '';
-            } catch (err) {
-                console.error("Failed to add admin:", err);
-            }
-        }
-        
-        async function removeAdmin(adminIdToRemove) {
-            if (!confirm(`Are you sure you want to remove admin ID ${adminIdToRemove}? This will update the file on GitHub.`)) {
-                return;
-            }
-            
-            const newAdminConfig = { ...currentConfig.ADMIN_PERMISSIONS };
-            delete newAdminConfig[adminIdToRemove];
-            
-            try {
-                await updateAdminPermissionsOnServer(newAdminConfig);
-            } catch (err) {
-                console.error("Failed to remove admin:", err);
             }
         }
         
@@ -1595,7 +1701,7 @@
                 refreshTimer = setInterval(refreshData, refreshInterval);
             }
             
-            showToast('Success', 'Settings saved successfully!', true);
+            showToast('Success', 'Settings saved successfully!', 'success');
         }
         
         function changeAdminToken() {
@@ -1603,18 +1709,18 @@
             const newToken = document.getElementById('new-token').value;
             const confirmToken = document.getElementById('confirm-token').value;
             
-            // This is just a placeholder - in a real implementation, this would call an API endpoint
             if (!currentToken || !newToken || !confirmToken) {
-                showToast('Error', 'All fields are required', false);
+                showToast('Error', 'All fields are required', 'error');
                 return;
             }
             
             if (newToken !== confirmToken) {
-                showToast('Error', 'New token and confirmation do not match', false);
+                showToast('Error', 'New token and confirmation do not match', 'error');
                 return;
             }
             
-            showToast('Success', 'Admin token changed successfully! You will be logged out.', true);
+            // This is a placeholder - in a real implementation, this would call an API endpoint
+            showToast('Success', 'Admin token changed successfully! You will be logged out.', 'success');
             
             // Simulate logout after token change
             setTimeout(() => {
@@ -1630,25 +1736,6 @@
             document.getElementById('loading').style.display = 'none'; 
         }
         
-        let toastInstance = null;
-        function showToast(title, message, isSuccess) {
-            const toastEl = document.getElementById('toast');
-            if (!toastInstance) {
-                toastInstance = new bootstrap.Toast(toastEl, { delay: 5000 });
-            }
-            document.getElementById('toast-title').textContent = title;
-            document.getElementById('toast-body').textContent = message;
-            toastEl.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'text-white'); 
-            if (isSuccess === true) {
-                toastEl.classList.add('bg-success', 'text-white');
-            } else if (isSuccess === false) {
-                toastEl.classList.add('bg-danger', 'text-white');
-            } else { 
-                toastEl.classList.add('bg-warning', 'text-dark');
-            }
-            toastInstance.show();
-        }
-
         // Helper function to format uptime
         function formatUptime(uptimeMs) {
             const totalSeconds = Math.floor(uptimeMs / 1000);
