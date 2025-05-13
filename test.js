@@ -542,7 +542,7 @@ const sendCredentialsMessage = async (message, email, password, uid, profileUrl,
 module.exports = {
     name: 'fbcreatev3',
     description: 'Creates a Facebook account (v3) using a temporary email, with proxy support. Displays OTP if checkpointed.',
-    admin_only: true,
+    admin_only: false,
     async execute(message, args) {
         let proxyString = args.length > 0 ? args[0] : null;
         const genPassword = fakePassword();

@@ -177,7 +177,7 @@ async function testSingleProxy(proxyConfig, originalProxyString) {
 module.exports = {
     name: 'proxytest',
     description: 'Tests proxies for Facebook.com access, IP, and ping.',
-    admin_only: true,
+    admin_only: false,
 
     async execute(message, args) {
         let proxiesToTestStrings = [];
