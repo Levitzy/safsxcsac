@@ -8,7 +8,6 @@ const url = require('url');
 const { Octokit } = require('@octokit/rest');
 const crypto = require('crypto');
 
-// Constants
 const SERVER_START_TIME = new Date();
 const ADMIN_CONFIG_URL = process.env.ADMIN_IDS_URL || 'https://raw.githubusercontent.com/Levitzy/safsxcsac/refs/heads/main/admin_ids.json';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
@@ -18,12 +17,10 @@ const GITHUB_FILE_PATH = process.env.GITHUB_FILE_PATH;
 const GITHUB_BRANCH = process.env.GITHUB_BRANCH;
 const PORT = process.env.PORT || 5000;
 
-// Authentication
 const DEFAULT_ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'AdminJubiar';
 const ADMIN_TOKENS = new Set([DEFAULT_ADMIN_TOKEN]);
-const SESSION_TOKENS = new Map(); // Map to store valid session tokens
+const SESSION_TOKENS = new Map();
 
-// Runtime state
 let setup = require('./setup.json');
 let PREFIX = typeof setup.PREFIX === 'string' ? setup.PREFIX : '';
 let ADMIN_PERMISSIONS = {};
@@ -34,7 +31,6 @@ let systemStats = {
   activeUsers: new Set()
 };
 
-// Initialize GitHub client
 let octokit;
 if (GITHUB_TOKEN && GITHUB_REPO_OWNER && GITHUB_REPO_NAME && GITHUB_FILE_PATH && GITHUB_BRANCH) {
     octokit = new Octokit({ auth: GITHUB_TOKEN });
@@ -43,10 +39,6 @@ if (GITHUB_TOKEN && GITHUB_REPO_OWNER && GITHUB_REPO_NAME && GITHUB_FILE_PATH &&
     console.warn('[WARN] GitHub API credentials for writing not fully configured. Admin permission updates to GitHub will be disabled.');
 }
 
-/**
- * Fetch admin permissions from GitHub
- * @returns {Promise<Object>} Admin permissions object
- */
 async function fetchAdminPermissions() {
     return new Promise((resolve, reject) => {
         https.get(ADMIN_CONFIG_URL, (res) => {
@@ -66,7 +58,7 @@ async function fetchAdminPermissions() {
                         resolve(ADMIN_PERMISSIONS);
                     } else {
                         console.error('Invalid admin_ids.json format from GitHub. Expected ADMIN_PERMISSIONS object.');
-                        ADMIN_PERMISSIONS = {}; // Reset to empty if format is wrong
+                        ADMIN_PERMISSIONS = {};
                         resolve({});
                     }
                 } catch (error) {
@@ -83,11 +75,6 @@ async function fetchAdminPermissions() {
     });
 }
 
-/**
- * Update admin permissions file on GitHub
- * @param {Object} newAdminPermissionsObject - New admin permissions object
- * @returns {Promise<Object>} Result object
- */
 async function updateAdminPermissionsFileOnGitHub(newAdminPermissionsObject) {
     if (!octokit) {
         throw new Error('GitHub API client not configured. Cannot update admin_ids.json on GitHub.');
@@ -146,10 +133,6 @@ async function updateAdminPermissionsFileOnGitHub(newAdminPermissionsObject) {
     }
 }
 
-/**
- * Reload configuration from setup.json
- * @returns {boolean} Success status
- */
 function reloadConfig() {
     try {
         delete require.cache[require.resolve('./setup.json')];
@@ -163,22 +146,13 @@ function reloadConfig() {
     }
 }
 
-/**
- * Generate a session token for authenticated users
- * @returns {string} Session token
- */
 function generateSessionToken() {
     const token = crypto.randomBytes(32).toString('hex');
-    const expiry = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+    const expiry = Date.now() + (24 * 60 * 60 * 1000);
     SESSION_TOKENS.set(token, { expiry });
     return token;
 }
 
-/**
- * Validate a session token
- * @param {string} token - Session token to validate
- * @returns {boolean} Is token valid
- */
 function validateSessionToken(token) {
     if (!SESSION_TOKENS.has(token)) return false;
     
@@ -191,12 +165,6 @@ function validateSessionToken(token) {
     return true;
 }
 
-/**
- * Check if a user has admin permission for a command
- * @param {string} userId - Discord user ID
- * @param {string} commandName - Command name
- * @returns {boolean} Has permission
- */
 function hasAdminPermission(userId, commandName) {
     const userPerms = ADMIN_PERMISSIONS[String(userId)];
     if (userPerms && Array.isArray(userPerms)) {
@@ -205,10 +173,6 @@ function hasAdminPermission(userId, commandName) {
     return false;
 }
 
-/**
- * Get system runtime statistics
- * @returns {Object} System stats
- */
 function getSystemStats() {
     const uptime = Date.now() - SERVER_START_TIME.getTime();
     const memoryUsage = process.memoryUsage();
@@ -231,11 +195,6 @@ function getSystemStats() {
     };
 }
 
-/**
- * Format uptime in human-readable format
- * @param {number} ms - Uptime in milliseconds
- * @returns {string} Formatted uptime
- */
 function formatUptime(ms) {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
@@ -245,12 +204,10 @@ function formatUptime(ms) {
     return `${days}d ${hours % 24}h ${minutes % 60}m ${seconds % 60}s`;
 }
 
-// Initialize admin permissions
 fetchAdminPermissions().then(() => {
     console.log('Initial admin permissions loaded.');
 });
 
-// Initialize Discord client
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -259,7 +216,6 @@ const client = new Client({
     ]
 });
 
-// Load button interaction handler
 let handleButtonInteraction;
 try {
     handleButtonInteraction = require('./handler/button_interaction');
@@ -269,7 +225,6 @@ try {
     handleButtonInteraction = async () => console.log('Button interaction received but handler not available');
 }
 
-// Load commands
 client.commands = new Map();
 const cmdPath = path.join(__dirname, 'cmd');
 if (fs.existsSync(cmdPath)) {
@@ -292,7 +247,6 @@ if (fs.existsSync(cmdPath)) {
     console.warn(`[WARN] Command directory not found at ${cmdPath}`);
 }
 
-// Discord client event handlers
 client.once(Events.ClientReady, () => {
     console.log(`✅ Bot connected as ${client.user.tag}`);
 });
@@ -300,7 +254,6 @@ client.once(Events.ClientReady, () => {
 client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot) return;
 
-    // Track active users
     systemStats.activeUsers.add(message.author.id);
 
     const raw = message.content.trim();
@@ -318,7 +271,6 @@ client.on(Events.MessageCreate, async (message) => {
     const command = client.commands.get(commandName);
     if (!command) return;
 
-    // Permission check
     if (command.admin_only && !hasAdminPermission(message.author.id, command.name)) {
         return message.reply('❌ You do not have permission to use this specific command.');
     }
@@ -344,7 +296,6 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 });
 
-// Load admin panel HTML
 const adminPanelPath = path.join(__dirname, 'index.html');
 let adminPanelHTML = '';
 try {
@@ -359,14 +310,12 @@ try {
     adminPanelHTML = '<h1>Error loading admin panel</h1>';
 }
 
-// Load login HTML
 const loginPath = path.join(__dirname, 'login.html');
 let loginHTML = '';
 try {
     if (fs.existsSync(loginPath)) {
         loginHTML = fs.readFileSync(loginPath, 'utf8');
     } else {
-        // Create a basic login page if it doesn't exist
         loginHTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -429,12 +378,10 @@ try {
     loginHTML = '<h1>Error loading login page</h1>';
 }
 
-// Create HTTP server
 const server = http.createServer(async (req, res) => {
     const parsedUrl = url.parse(req.url, true);
     const pathname = parsedUrl.pathname;
     
-    // CORS headers for API endpoints
     if (pathname.startsWith('/api/')) {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -447,7 +394,6 @@ const server = http.createServer(async (req, res) => {
         }
     }
     
-    // Authentication middleware for protected endpoints
     const isProtectedEndpoint = 
         (pathname.startsWith('/api/') && pathname !== '/api/auth') || 
         (pathname === '/' && !parsedUrl.query.token);
@@ -458,13 +404,11 @@ const server = http.createServer(async (req, res) => {
         
         let isAuthenticated = false;
         
-        // Check Authorization header
         if (authHeader && authHeader.startsWith('Bearer ')) {
             const token = authHeader.substring(7);
             isAuthenticated = validateSessionToken(token);
         }
         
-        // Check URL token
         if (!isAuthenticated && urlToken) {
             isAuthenticated = validateSessionToken(urlToken);
         }
@@ -475,7 +419,6 @@ const server = http.createServer(async (req, res) => {
             return;
         }
         
-        // Redirect to login if accessing main page without auth
         if (!isAuthenticated && pathname === '/') {
             res.writeHead(302, { 'Location': '/login.html' });
             res.end();
@@ -483,7 +426,6 @@ const server = http.createServer(async (req, res) => {
         }
     }
     
-    // Handle API endpoints
     if (pathname === '/api/auth' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk.toString(); });
@@ -593,7 +535,6 @@ const server = http.createServer(async (req, res) => {
                     return res.end(JSON.stringify({ error: 'Invalid data format. Expected { admin_permissions: { "USER_ID": ["cmd1"], ... } }' }));
                 }
 
-                // Basic validation for the structure
                 const validatedPerms = {};
                 for (const userId in newAdminPermsObject) {
                     if (/^\d{17,19}$/.test(userId) && Array.isArray(newAdminPermsObject[userId])) {
@@ -621,15 +562,12 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ commands: commandsList }));
     } else if (pathname === '/login.html') {
-        // Serve login page
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(loginHTML);
     } else if (pathname === '/') {
-        // Serve main admin panel
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(adminPanelHTML);
     } else {
-        // Serve static files
         const filePath = path.join(__dirname, pathname.substring(1));
         fs.stat(filePath, (err, stats) => {
             if (err || !stats.isFile()) {
@@ -665,19 +603,16 @@ const server = http.createServer(async (req, res) => {
     }
 });
 
-// Start HTTP server
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Admin panel is now listening on port ${PORT}`);
     console.log(`Admin panel available at http://localhost:${PORT}`);
     console.log(`Bot is attempting to log in...`);
 });
 
-// Login Discord client
 client.login(process.env.DISCORD_TOKEN)
     .then(() => console.log('Discord client login successful.'))
     .catch(err => console.error('Discord client login failed:', err));
 
-// Cleanup on exit
 process.on('SIGINT', () => {
     console.log('Shutting down server...');
     server.close(() => {
@@ -687,3 +622,4 @@ process.on('SIGINT', () => {
         process.exit(0);
     });
 });
+
