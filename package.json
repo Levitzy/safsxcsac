@@ -16,7 +16,7 @@
     "axios-cookiejar-support": "^6.0.2",
     "cheerio": "^1.0.0",
     "discord-bot-basico": "file:",
-    "discord.js": "^14.19.3",
+    "discord.js": "^14.14.1",
     "dotenv": "^16.5.0",
     "faker": "^5.5.3",
     "hpagent": "^1.2.0",
