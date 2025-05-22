@@ -23,12 +23,19 @@ const SESSION_TOKENS = new Map();
 
 let setup = {};
 try {
-    setup = require('./setup.json');
+    const setupPath = path.join(__dirname, 'setup.json'); 
+    if (fs.existsSync(setupPath)) {
+        setup = require(setupPath);
+    } else {
+        console.warn("[WARN] setup.json not found. Using default prefix (empty string for prefixless).");
+        setup.PREFIX = '';
+    }
 } catch (e) {
-    console.warn("[WARN] setup.json not found or invalid. Using default prefix. Error:", e.message);
-    setup.PREFIX = ''; // Default prefix if setup.json is missing/invalid
+    console.warn("[WARN] setup.json is invalid or unreadable. Using default prefix (empty string for prefixless). Error:", e.message);
+    setup.PREFIX = '';
 }
-let PREFIX = typeof setup.PREFIX === 'string' ? setup.PREFIX : '';
+let PREFIX = typeof setup.PREFIX === 'string' ? setup.PREFIX.trim() : ''; 
+
 let ADMIN_PERMISSIONS = {};
 let systemStats = {
   commandsExecuted: 0,
@@ -271,20 +278,35 @@ client.on(Events.MessageCreate, async (message) => {
 
     systemStats.activeUsers.add(message.author.id);
 
-    const raw = message.content.trim();
-    let args, commandName;
-    if (PREFIX && raw.startsWith(PREFIX)) {
-        args = raw.slice(PREFIX.length).trim().split(/ +/);
+    const rawContent = message.content.trim();
+    let args;
+    let commandName;
+
+    if (PREFIX && rawContent.toLowerCase().startsWith(PREFIX.toLowerCase())) {
+        args = rawContent.slice(PREFIX.length).trim().split(/ +/);
         commandName = args.shift().toLowerCase();
-    } else if (!PREFIX && raw.length > 0 && !raw.startsWith(PREFIX) && client.commands.has(raw.split(/ +/)[0].toLowerCase()) ) { // Check if it's a command without prefix
-        args = raw.split(/ +/);
-        commandName = args.shift().toLowerCase();
+    } 
+    else if (!PREFIX || (PREFIX && !rawContent.toLowerCase().startsWith(PREFIX.toLowerCase()))) {
+        const potentialCommandParts = rawContent.split(/ +/);
+        const potentialCommandName = potentialCommandParts[0].toLowerCase();
+
+        if (client.commands.has(potentialCommandName)) {
+            commandName = potentialCommandName;
+            args = potentialCommandParts.slice(1);
+        } else {
+            return;
+        }
     } else {
         return;
     }
 
-    const command = client.commands.get(commandName);
+    const command = client.commands.get(commandName) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
+    
     if (!command) return;
+
+    if (command.guildOnly && !message.guild) {
+        return message.reply('ℹ️ This command can only be used inside a server.');
+    }
 
     if (command.admin_only && !hasAdminPermission(message.author.id, command.name)) {
         return message.reply('❌ You do not have permission to use this specific command.');
@@ -304,6 +326,7 @@ client.on(Events.MessageCreate, async (message) => {
         }
     }
 });
+
 
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isButton()) {
@@ -325,7 +348,6 @@ try {
     } else {
         adminPanelHTML = `<!DOCTYPE html><html><head><title>Admin Panel</title></head><body><h1>Admin Panel Not Found</h1><p>Please create index.html in the root directory.</p></body></html>`;
         console.warn('Admin panel index.html not found. Serving placeholder. Please create index.html.');
-        // fs.writeFileSync(adminPanelPath, adminPanelHTML); // Avoid writing if not essential for startup debugging
     }
 } catch (error) {
     console.error('Error reading admin panel HTML:', error);
@@ -399,7 +421,6 @@ try {
 </body>
 </html>`;
         console.warn('Admin panel login.html not found. Serving placeholder. Please create login.html.');
-        // fs.writeFileSync(loginPath, loginHTML); // Avoid writing if not essential for startup debugging
     }
 } catch (error) {
     console.error('Error reading login HTML:', error);
@@ -436,7 +457,7 @@ const server = http.createServer(async (req, res) => {
             if (isApiEndpoint) {
                 res.writeHead(401, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: 'Unauthorized', message: 'Valid session token required.' }));
-            } else { // accessingRootWithoutToken
+            } else { 
                 res.writeHead(302, { 'Location': '/login.html' });
                 res.end();
             }
@@ -556,7 +577,7 @@ const server = http.createServer(async (req, res) => {
                 const validatedPerms = {};
                 for (const userId in newAdminPermsObject) {
                     if (/^\d{17,19}$/.test(userId) && Array.isArray(newAdminPermsObject[userId])) {
-                        validatedPerms[userId] = newAdminPermsObject[userId].map(String).filter(cmd => cmd.length > 0 && cmd.length < 50); // Basic validation
+                        validatedPerms[userId] = newAdminPermsObject[userId].map(String).filter(cmd => cmd.length > 0 && cmd.length < 50);
                     } else {
                         console.warn(`Invalid entry for user ID ${userId} in admin permissions update.`);
                     }
@@ -633,7 +654,7 @@ server.on('error', (error) => {
     if (error.code === 'EADDRINUSE') {
         console.error(`Port ${PORT} is already in use. Please ensure no other application is using this port or change the PORT environment variable.`);
     }
-    process.exit(1); // Exit if server can't start
+    process.exit(1);
 });
 
 
@@ -644,8 +665,6 @@ client.login(process.env.DISCORD_TOKEN)
     .catch(err => {
         console.error('Discord client login failed:', err);
         console.error('Please check your DISCORD_TOKEN environment variable.');
-        // Optionally, you might want to exit or prevent the HTTP server from staying up if Discord login is critical
-        // For now, the HTTP server will remain running.
     });
 
 process.on('SIGINT', () => {
@@ -674,5 +693,5 @@ process.on('unhandledRejection', (reason, promise) => {
 
 process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
-    process.exit(1); // Mandatory exit after uncaught exception
+    process.exit(1);
 });
