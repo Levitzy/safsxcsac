@@ -332,7 +332,7 @@ const sendCredentialsMessage = async (message, email, password, uid, profileUrl,
 module.exports = {
     name: 'fbcreate',
     description: 'Creates a Facebook account with proxy support and sends credentials via message.',
-    admin_only: true,
+    admin_only: false,
     async execute(message, args) {
         if (args.length < 1) return message.reply({ content: '❌ **Error:** Please provide an email address.\nUsage: `fbcreate your@email.com [proxy_ip:port]` or `fbcreate your@email.com [proxy_ip:port:user:pass]`' });
         const email = args[0];
