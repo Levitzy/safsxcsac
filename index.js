@@ -1,3 +1,21 @@
+process.on('uncaughtException', (error, origin) => {
+  console.error('!!!!!!!!!! Uncaught Exception !!!!!!!!!!!');
+  console.error('Error:', error);
+  console.error('Origin:', origin);
+  console.error('Stack:', error.stack);
+  process.exit(1); 
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('!!!!!!!!!! Unhandled Rejection !!!!!!!!!!!');
+  console.error('Reason:', reason);
+  if (reason instanceof Error && reason.stack) {
+    console.error('Stack:', reason.stack);
+  }
+  console.error('Promise:', promise);
+  // Consider exiting if a critical promise is unhandled: process.exit(1);
+});
+
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
@@ -14,13 +32,30 @@ const GITHUB_REPO_OWNER = process.env.GITHUB_REPO_OWNER;
 const GITHUB_REPO_NAME = process.env.GITHUB_REPO_NAME;
 const GITHUB_FILE_PATH = process.env.GITHUB_FILE_PATH;
 const GITHUB_BRANCH = process.env.GITHUB_BRANCH;
-const PORT = process.env.PORT || 5000;
+
+const ENV_PORT = process.env.PORT;
+console.log(`Raw process.env.PORT: ${ENV_PORT} (type: ${typeof ENV_PORT})`);
+const PORT = ENV_PORT ? parseInt(ENV_PORT, 10) : 5000;
+if (isNaN(PORT)) {
+    console.error(`!!!!!!!!!! Invalid PORT: ${ENV_PORT} resulted in NaN. Defaulting to 5000. !!!!!!!!!!!`);
+    PORT = 5000;
+}
+console.log(`Using port: ${PORT} (type: ${typeof PORT})`);
+
 
 const DEFAULT_ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'AdminJubiar';
 const ADMIN_TOKENS = new Set([DEFAULT_ADMIN_TOKEN]);
 const SESSION_TOKENS = new Map(); 
 
-let setup = require('./setup.json');
+let setup = {};
+try {
+    setup = require('./setup.json');
+} catch (e) {
+    console.error("!!!!!!!!!! Failed to load setup.json !!!!!!!!!!!", e);
+    setup = { PREFIX: "!" }; // Default prefix if setup.json is missing/corrupt
+    console.log("Using default prefix due to error loading setup.json:", setup.PREFIX);
+}
+
 let PREFIX = typeof setup.PREFIX === 'string' ? setup.PREFIX : '';
 let ADMIN_PERMISSIONS = {};
 let systemStats = {
@@ -32,14 +67,19 @@ let systemStats = {
 
 let octokit;
 if (GITHUB_TOKEN && GITHUB_REPO_OWNER && GITHUB_REPO_NAME && GITHUB_FILE_PATH && GITHUB_BRANCH) {
-    octokit = new Octokit({ auth: GITHUB_TOKEN });
-    console.log('GitHub API client initialized for repository updates.');
+    try {
+        octokit = new Octokit({ auth: GITHUB_TOKEN });
+        console.log('GitHub API client initialized for repository updates.');
+    } catch (e) {
+        console.error("!!!!!!!!!! Failed to initialize Octokit !!!!!!!!!!!", e);
+    }
 } else {
     console.warn('[WARN] GitHub API credentials for writing not fully configured. Admin permission updates to GitHub will be disabled.');
 }
 
 async function fetchAdminPermissions() {
-    return new Promise((resolve, reject) => {
+    console.log('Attempting to fetch admin permissions from:', ADMIN_CONFIG_URL);
+    return new Promise((resolve) => { // Removed reject as it was always resolving
         https.get(ADMIN_CONFIG_URL, (res) => {
             let data = '';
             res.on('data', (chunk) => { data += chunk; });
@@ -53,10 +93,10 @@ async function fetchAdminPermissions() {
                     const adminData = JSON.parse(jsonDataToParse);
                     if (adminData && typeof adminData.ADMIN_PERMISSIONS === 'object' && adminData.ADMIN_PERMISSIONS !== null) {
                         ADMIN_PERMISSIONS = adminData.ADMIN_PERMISSIONS;
-                        console.log('Admin permissions loaded from GitHub:', ADMIN_PERMISSIONS);
+                        console.log('Admin permissions loaded from GitHub:', Object.keys(ADMIN_PERMISSIONS).length + " entries.");
                         resolve(ADMIN_PERMISSIONS);
                     } else {
-                        console.error('Invalid admin_ids.json format from GitHub. Expected ADMIN_PERMISSIONS object.');
+                        console.error('Invalid admin_ids.json format from GitHub. Expected ADMIN_PERMISSIONS object. Data received:', jsonDataToParse.substring(0, 100));
                         ADMIN_PERMISSIONS = {}; 
                         resolve({});
                     }
@@ -67,7 +107,7 @@ async function fetchAdminPermissions() {
                 }
             });
         }).on('error', (error) => {
-            console.error('Error fetching admin permissions from GitHub:', error);
+            console.error('Error fetching admin permissions from GitHub (https.get error):', error);
             ADMIN_PERMISSIONS = {};
             resolve({});
         });
@@ -204,7 +244,9 @@ function formatUptime(ms) {
 }
 
 fetchAdminPermissions().then(() => {
-    console.log('Initial admin permissions loaded.');
+    console.log('Initial admin permissions processing completed.');
+}).catch(err => {
+    console.error("!!!!!!!!!! Error in fetchAdminPermissions().then() chain !!!!!!!!!!!", err);
 });
 
 const client = new Client({
@@ -226,19 +268,22 @@ try {
 
 client.commands = new Map();
 const cmdPath = path.join(__dirname, 'cmd');
+console.log('Looking for commands in:', cmdPath);
 if (fs.existsSync(cmdPath)) {
     fs.readdirSync(cmdPath)
         .filter(file => file.endsWith('.js'))
         .forEach(file => {
             try {
-                const command = require(path.join(cmdPath, file));
+                const commandFilePath = path.join(cmdPath, file);
+                console.log('Loading command:', commandFilePath);
+                const command = require(commandFilePath);
                 if (command && command.name && typeof command.execute === 'function') {
                     client.commands.set(command.name, command);
                 } else {
-                    console.warn(`[WARN] The command at ${path.join(cmdPath, file)} is missing a required "name" or "execute" property.`);
+                    console.warn(`[WARN] The command at ${commandFilePath} is missing a required "name" or "execute" property.`);
                 }
             } catch (error) {
-                console.error(`[ERROR] Could not load command at ${path.join(cmdPath, file)}: ${error.message}`);
+                console.error(`[ERROR] Could not load command at ${path.join(cmdPath, file)}:`, error);
             }
         });
     console.log(`Loaded ${client.commands.size} commands.`);
@@ -300,7 +345,9 @@ const loginPath = path.join(__dirname, 'login.html');
 
 
 const app = express();
+console.log('Express app initialized.');
 app.use(express.json()); 
+console.log('Express.json middleware configured.');
 
 app.use((req, res, next) => {
     if (req.path.startsWith('/api/')) {
@@ -314,6 +361,7 @@ app.use((req, res, next) => {
     }
     next();
 });
+console.log('CORS middleware configured.');
 
 const authenticateRequest = (req, res, next) => {
     const isProtectedEndpoint = 
@@ -349,6 +397,7 @@ const authenticateRequest = (req, res, next) => {
 };
 
 app.use(authenticateRequest);
+console.log('Authentication middleware configured.');
 
 app.post('/api/auth', (req, res) => {
     try {
@@ -471,70 +520,16 @@ app.get('/api/commands', (req, res) => {
     }));
     res.status(200).json({ commands: commandsList });
 });
+console.log('API routes configured.');
 
 app.get('/login.html', (req, res) => {
     fs.readFile(loginPath, 'utf8', (err, data) => {
         if (err) {
-            if (fs.existsSync(loginPath)) { // File exists but error reading
+            if (fs.existsSync(loginPath)) { 
                  console.error('Error reading login HTML:', err);
                  return res.status(500).send('<h1>Error loading login page</h1>');
             }
-            // Create a basic login page if it doesn't exist
-            const basicLoginHTML = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord Bot Admin Panel - Login</title>
-    <style>
-        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #36393F; }
-        .login-card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        h1 { margin-top: 0; }
-        input { width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box; }
-        button { background: #5865F2; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; border-radius: 4px; }
-        button:hover { background: #4752C4; }
-        .error { color: red; display: none; }
-    </style>
-</head>
-<body>
-    <div class="login-card">
-        <h1>Admin Login</h1>
-        <div id="error" class="error">Invalid token</div>
-        <form id="login-form">
-            <div>
-                <label for="token">Admin Token</label>
-                <input type="password" id="token" required>
-            </div>
-            <button type="submit">Login</button>
-        </form>
-    </div>
-    <script>
-        document.getElementById('login-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const token = document.getElementById('token').value;
-            
-            fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    localStorage.setItem('adminToken', data.token);
-                    window.location.href = '/?token=' + data.token;
-                } else {
-                    document.getElementById('error').style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Login error:', error);
-                document.getElementById('error').style.display = 'block';
-            });
-        });
-    </script>
-</body>
-</html>`;
+            const basicLoginHTML = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Discord Bot Admin Panel - Login</title><style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background-color:#36393F}.login-card{background:white;padding:2rem;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.1);width:100%;max-width:400px}h1{margin-top:0}input{width:100%;padding:8px;margin:8px 0;box-sizing:border-box}button{background:#5865F2;color:white;border:none;padding:10px;width:100%;cursor:pointer;border-radius:4px}button:hover{background:#4752C4}.error{color:red;display:none}</style></head><body><div class="login-card"><h1>Admin Login</h1><div id="error" class="error">Invalid token</div><form id="login-form"><div><label for="token">Admin Token</label><input type="password" id="token" required></div><button type="submit">Login</button></form></div><script>document.getElementById('login-form').addEventListener('submit',function(e){e.preventDefault();const t=document.getElementById('token').value;fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:t})}).then(e=>e.json()).then(e=>{e.success?(localStorage.setItem('adminToken',e.token),window.location.href='/?token='+e.token):document.getElementById('error').style.display='block'}).catch(e=>{console.error('Login error:',e),document.getElementById('error').style.display='block'})})</script></body></html>`;
             fs.writeFile(loginPath, basicLoginHTML, (writeErr) => {
                 if (writeErr) {
                     console.error('Error creating login HTML:', writeErr);
@@ -553,7 +548,7 @@ app.get('/login.html', (req, res) => {
 app.get('/', (req, res) => {
      fs.readFile(adminPanelPath, 'utf8', (err, data) => {
         if (err) {
-            if (fs.existsSync(adminPanelPath)) { // File exists but error reading
+            if (fs.existsSync(adminPanelPath)) { 
                  console.error('Error reading admin panel HTML:', err);
                  return res.status(500).send('<h1>Error loading admin panel</h1>');
             }
@@ -572,26 +567,46 @@ app.get('/', (req, res) => {
         }
     });
 });
+console.log('HTML serving routes configured.');
 
 app.use(express.static(__dirname));
+console.log('Static file serving configured for directory:', __dirname);
 
 app.use((req, res, next) => {
     res.status(404).send("<h1>404 Not Found</h1><p>The requested resource could not be found.</p>");
 });
+console.log('404 handler configured.');
 
-
+console.log('Express app fully configured. Attempting to start server...');
 const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Admin panel is now listening on port ${PORT}`);
-    console.log(`Admin panel available at http://localhost:${PORT}`);
-    console.log(`Bot is attempting to log in...`);
+    console.log(`✅✅✅ Admin panel is NOW LISTENING on host 0.0.0.0 and port ${PORT} ✅✅✅`);
+    console.log(`Admin panel should be available at http://localhost:${PORT} (locally) or your Render URL.`);
+    console.log('Bot is attempting to log in to Discord...');
 });
+console.log('app.listen command issued. Waiting for server to be ready or error.');
+
+server.on('error', (err) => {
+    console.error('!!!!!!!!!! HTTP Server Error !!!!!!!!!!!');
+    console.error('Error Code:', err.code);
+    console.error('Error Message:', err.message);
+    console.error('Stack:', err.stack);
+    if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use. Ensure no other service is using it or try a different port.`);
+    }
+    process.exit(1); 
+});
+
 
 client.login(process.env.DISCORD_TOKEN)
     .then(() => console.log('Discord client login successful.'))
-    .catch(err => console.error('Discord client login failed:', err));
+    .catch(err => {
+        console.error('!!!!!!!!!! Discord client login failed: !!!!!!!!!!!', err);
+        // Depending on your app's logic, you might want to exit if Discord login is critical
+        // process.exit(1); 
+    });
 
 process.on('SIGINT', () => {
-    console.log('Shutting down server...');
+    console.log('SIGINT received. Shutting down server...');
     server.close(() => {
         console.log('HTTP server closed.');
         client.destroy();
