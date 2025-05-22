@@ -21,7 +21,13 @@ const DEFAULT_ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'AdminJubiar';
 const ADMIN_TOKENS = new Set([DEFAULT_ADMIN_TOKEN]);
 const SESSION_TOKENS = new Map();
 
-let setup = require('./setup.json');
+let setup = {};
+try {
+    setup = require('./setup.json');
+} catch (e) {
+    console.warn("[WARN] setup.json not found or invalid. Using default prefix. Error:", e.message);
+    setup.PREFIX = ''; // Default prefix if setup.json is missing/invalid
+}
 let PREFIX = typeof setup.PREFIX === 'string' ? setup.PREFIX : '';
 let ADMIN_PERMISSIONS = {};
 let systemStats = {
@@ -40,6 +46,7 @@ if (GITHUB_TOKEN && GITHUB_REPO_OWNER && GITHUB_REPO_NAME && GITHUB_FILE_PATH &&
 }
 
 async function fetchAdminPermissions() {
+    console.log(`Fetching admin permissions from: ${ADMIN_CONFIG_URL}`);
     return new Promise((resolve, reject) => {
         https.get(ADMIN_CONFIG_URL, (res) => {
             let data = '';
@@ -54,21 +61,21 @@ async function fetchAdminPermissions() {
                     const adminData = JSON.parse(jsonDataToParse);
                     if (adminData && typeof adminData.ADMIN_PERMISSIONS === 'object' && adminData.ADMIN_PERMISSIONS !== null) {
                         ADMIN_PERMISSIONS = adminData.ADMIN_PERMISSIONS;
-                        console.log('Admin permissions loaded from GitHub:', ADMIN_PERMISSIONS);
+                        console.log('Admin permissions successfully loaded from GitHub:', ADMIN_PERMISSIONS);
                         resolve(ADMIN_PERMISSIONS);
                     } else {
-                        console.error('Invalid admin_ids.json format from GitHub. Expected ADMIN_PERMISSIONS object.');
+                        console.error('Invalid admin_ids.json format from GitHub. Expected ADMIN_PERMISSIONS object. Data received:', data.substring(0, 200));
                         ADMIN_PERMISSIONS = {};
                         resolve({});
                     }
                 } catch (error) {
-                    console.error('Error parsing admin_ids.json from GitHub:', error);
+                    console.error('Error parsing admin_ids.json from GitHub:', error.message, 'Data received:', data.substring(0, 200));
                     ADMIN_PERMISSIONS = {};
                     resolve({});
                 }
             });
         }).on('error', (error) => {
-            console.error('Error fetching admin permissions from GitHub:', error);
+            console.error('Error fetching admin permissions from GitHub URL:', error);
             ADMIN_PERMISSIONS = {};
             resolve({});
         });
@@ -205,7 +212,9 @@ function formatUptime(ms) {
 }
 
 fetchAdminPermissions().then(() => {
-    console.log('Initial admin permissions loaded.');
+    console.log('Initial admin permissions fetch attempt completed.');
+}).catch(err => {
+    console.error('CRITICAL: Failed to fetch initial admin permissions during startup. Bot may not function correctly with permissions.', err);
 });
 
 const client = new Client({
@@ -227,28 +236,34 @@ try {
 
 client.commands = new Map();
 const cmdPath = path.join(__dirname, 'cmd');
+console.log(`Command path is: ${cmdPath}`);
 if (fs.existsSync(cmdPath)) {
+    console.log(`Attempting to load commands from: ${cmdPath}`);
     fs.readdirSync(cmdPath)
         .filter(file => file.endsWith('.js'))
         .forEach(file => {
+            console.log(`Attempting to load command file: ${file}`);
             try {
                 const command = require(path.join(cmdPath, file));
                 if (command && command.name && typeof command.execute === 'function') {
                     client.commands.set(command.name, command);
+                    console.log(`Successfully loaded command: ${command.name}`);
                 } else {
                     console.warn(`[WARN] The command at ${path.join(cmdPath, file)} is missing a required "name" or "execute" property.`);
                 }
             } catch (error) {
                 console.error(`[ERROR] Could not load command at ${path.join(cmdPath, file)}: ${error.message}`);
+                console.error(error.stack); 
             }
         });
-    console.log(`Loaded ${client.commands.size} commands.`);
+    console.log(`Loaded ${client.commands.size} commands successfully.`);
 } else {
-    console.warn(`[WARN] Command directory not found at ${cmdPath}`);
+    console.warn(`[WARN] Command directory not found at ${cmdPath}. No commands loaded.`);
 }
 
 client.once(Events.ClientReady, () => {
     console.log(`✅ Bot connected as ${client.user.tag}`);
+    console.log(`Bot is ready and operating!`);
 });
 
 client.on(Events.MessageCreate, async (message) => {
@@ -261,7 +276,7 @@ client.on(Events.MessageCreate, async (message) => {
     if (PREFIX && raw.startsWith(PREFIX)) {
         args = raw.slice(PREFIX.length).trim().split(/ +/);
         commandName = args.shift().toLowerCase();
-    } else if (!PREFIX) {
+    } else if (!PREFIX && raw.length > 0 && !raw.startsWith(PREFIX) && client.commands.has(raw.split(/ +/)[0].toLowerCase()) ) { // Check if it's a command without prefix
         args = raw.split(/ +/);
         commandName = args.shift().toLowerCase();
     } else {
@@ -292,7 +307,13 @@ client.on(Events.MessageCreate, async (message) => {
 
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isButton()) {
-        await handleButtonInteraction(interaction);
+        if (typeof handleButtonInteraction === 'function') {
+            await handleButtonInteraction(interaction);
+        } else {
+            console.warn('Received button interaction but handleButtonInteraction is not a function.');
+            if (interaction.replied || interaction.deferred) return;
+            await interaction.reply({ content: 'Error: Button handler not configured correctly.', ephemeral: true }).catch(console.error);
+        }
     }
 });
 
@@ -302,11 +323,12 @@ try {
     if (fs.existsSync(adminPanelPath)) {
         adminPanelHTML = fs.readFileSync(adminPanelPath, 'utf8');
     } else {
-        adminPanelHTML = `<!DOCTYPE html><html><head><title>Admin Panel</title></head><body><h1>Admin Panel Not Found</h1><p>Please create index.html.</p></body></html>`;
-        fs.writeFileSync(adminPanelPath, adminPanelHTML);
+        adminPanelHTML = `<!DOCTYPE html><html><head><title>Admin Panel</title></head><body><h1>Admin Panel Not Found</h1><p>Please create index.html in the root directory.</p></body></html>`;
+        console.warn('Admin panel index.html not found. Serving placeholder. Please create index.html.');
+        // fs.writeFileSync(adminPanelPath, adminPanelHTML); // Avoid writing if not essential for startup debugging
     }
 } catch (error) {
-    console.error('Error reading/creating admin panel HTML:', error);
+    console.error('Error reading admin panel HTML:', error);
     adminPanelHTML = '<h1>Error loading admin panel</h1>';
 }
 
@@ -323,31 +345,34 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Discord Bot Admin Panel - Login</title>
     <style>
-        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #36393F; }
-        .login-card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        h1 { margin-top: 0; }
-        input { width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box; }
-        button { background: #5865F2; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; border-radius: 4px; }
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #36393F; color: #DCDDDE; }
+        .login-card { background: #2F3136; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); width: 100%; max-width: 400px; text-align: center; }
+        h1 { margin-top: 0; color: #FFFFFF; }
+        label { display: block; margin-bottom: 0.5rem; text-align: left; color: #B9BBBE;}
+        input[type="password"] { width: calc(100% - 16px); padding: 8px; margin-bottom: 1rem; background-color: #202225; border: 1px solid #000000; border-radius: 3px; color: #DCDDDE; }
+        button { background: #5865F2; color: white; border: none; padding: 10px 15px; width: 100%; cursor: pointer; border-radius: 3px; font-size: 1rem; }
         button:hover { background: #4752C4; }
-        .error { color: red; display: none; }
+        .error { color: #FAA61A; display: none; margin-top: 1rem; }
     </style>
 </head>
 <body>
     <div class="login-card">
         <h1>Admin Login</h1>
-        <div id="error" class="error">Invalid token</div>
         <form id="login-form">
             <div>
                 <label for="token">Admin Token</label>
-                <input type="password" id="token" required>
+                <input type="password" id="token" name="token" required>
             </div>
             <button type="submit">Login</button>
         </form>
+        <div id="error-message" class="error">Invalid token</div>
     </div>
     <script>
         document.getElementById('login-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const token = document.getElementById('token').value;
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.style.display = 'none';
             
             fetch('/api/auth', {
                 method: 'POST',
@@ -356,25 +381,28 @@ try {
             })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    localStorage.setItem('adminToken', data.token);
-                    window.location.href = '/?token=' + data.token;
+                if (data.success && data.token) {
+                    localStorage.setItem('adminSessionToken', data.token);
+                    window.location.href = '/?session_token=' + data.token;
                 } else {
-                    document.getElementById('error').style.display = 'block';
+                    errorDiv.textContent = data.message || 'Invalid token or server error.';
+                    errorDiv.style.display = 'block';
                 }
             })
             .catch(error => {
-                console.error('Login error:', error);
-                document.getElementById('error').style.display = 'block';
+                console.error('Login fetch error:', error);
+                errorDiv.textContent = 'Login request failed. Check console.';
+                errorDiv.style.display = 'block';
             });
         });
     </script>
 </body>
 </html>`;
-        fs.writeFileSync(loginPath, loginHTML);
+        console.warn('Admin panel login.html not found. Serving placeholder. Please create login.html.');
+        // fs.writeFileSync(loginPath, loginHTML); // Avoid writing if not essential for startup debugging
     }
 } catch (error) {
-    console.error('Error reading/creating login HTML:', error);
+    console.error('Error reading login HTML:', error);
     loginHTML = '<h1>Error loading login page</h1>';
 }
 
@@ -388,40 +416,30 @@ const server = http.createServer(async (req, res) => {
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         
         if (req.method === 'OPTIONS') {
-            res.writeHead(200);
+            res.writeHead(204);
             res.end();
             return;
         }
     }
     
-    const isProtectedEndpoint = 
-        (pathname.startsWith('/api/') && pathname !== '/api/auth') || 
-        (pathname === '/' && !parsedUrl.query.token);
-    
-    if (isProtectedEndpoint) {
-        const authHeader = req.headers.authorization;
-        const urlToken = parsedUrl.query.token;
-        
-        let isAuthenticated = false;
-        
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            const token = authHeader.substring(7);
-            isAuthenticated = validateSessionToken(token);
+    const isApiEndpoint = pathname.startsWith('/api/');
+    const needsAuth = isApiEndpoint && pathname !== '/api/auth';
+    const accessingRootWithoutToken = pathname === '/' && !parsedUrl.query.session_token;
+
+    if (needsAuth || accessingRootWithoutToken) {
+        let sessionToken = parsedUrl.query.session_token; 
+        if (!sessionToken && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+            sessionToken = req.headers.authorization.substring(7);
         }
-        
-        if (!isAuthenticated && urlToken) {
-            isAuthenticated = validateSessionToken(urlToken);
-        }
-        
-        if (!isAuthenticated && pathname !== '/') {
-            res.writeHead(401, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Unauthorized', message: 'Authentication required' }));
-            return;
-        }
-        
-        if (!isAuthenticated && pathname === '/') {
-            res.writeHead(302, { 'Location': '/login.html' });
-            res.end();
+
+        if (!validateSessionToken(sessionToken)) {
+            if (isApiEndpoint) {
+                res.writeHead(401, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Unauthorized', message: 'Valid session token required.' }));
+            } else { // accessingRootWithoutToken
+                res.writeHead(302, { 'Location': '/login.html' });
+                res.end();
+            }
             return;
         }
     }
@@ -434,23 +452,24 @@ const server = http.createServer(async (req, res) => {
                 const { token } = JSON.parse(body);
                 
                 if (ADMIN_TOKENS.has(token)) {
-                    const sessionToken = generateSessionToken();
+                    const sessionTokenVal = generateSessionToken();
                     res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ 
                         success: true, 
-                        token: sessionToken,
-                        message: 'Authentication successful' 
+                        token: sessionTokenVal,
+                        message: 'Authentication successful. Session token generated.' 
                     }));
                 } else {
                     res.writeHead(401, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ 
+                        success: false,
                         error: 'Invalid token', 
-                        message: 'The provided authentication token is invalid' 
+                        message: 'The provided authentication token is invalid.' 
                     }));
                 }
             } catch (error) {
                 res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Invalid request', message: error.message }));
+                res.end(JSON.stringify({ success: false, error: 'Invalid request body', message: error.message }));
             }
         });
     } else if (pathname === '/api/uptime' && req.method === 'GET') {
@@ -504,22 +523,21 @@ const server = http.createServer(async (req, res) => {
             }
         });
     } else if (pathname === '/api/admin-permissions/refresh' && req.method === 'GET') {
-        try {
-            await fetchAdminPermissions();
+        fetchAdminPermissions().then(perms => {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ 
                 success: true,
-                ADMIN_PERMISSIONS: ADMIN_PERMISSIONS,
+                ADMIN_PERMISSIONS: perms,
                 source: ADMIN_CONFIG_URL,
                 message: 'Admin permissions refreshed from GitHub.'
             }));
-        } catch (error) {
+        }).catch(error => {
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ 
                 error: 'Failed to refresh admin permissions',
                 message: error.message 
             }));
-        }
+        });
     } else if (pathname === '/api/admin-permissions/update' && req.method === 'POST') {
         if (!octokit) {
             res.writeHead(503, { 'Content-Type': 'application/json' });
@@ -538,7 +556,7 @@ const server = http.createServer(async (req, res) => {
                 const validatedPerms = {};
                 for (const userId in newAdminPermsObject) {
                     if (/^\d{17,19}$/.test(userId) && Array.isArray(newAdminPermsObject[userId])) {
-                        validatedPerms[userId] = newAdminPermsObject[userId].map(String).filter(cmd => cmd.length > 0);
+                        validatedPerms[userId] = newAdminPermsObject[userId].map(String).filter(cmd => cmd.length > 0 && cmd.length < 50); // Basic validation
                     } else {
                         console.warn(`Invalid entry for user ID ${userId} in admin permissions update.`);
                     }
@@ -595,7 +613,6 @@ const server = http.createServer(async (req, res) => {
                     res.end('<h1>500 Internal Server Error</h1><p>Error reading file.</p>');
                     return;
                 }
-
                 res.writeHead(200, { 'Content-Type': contentType });
                 res.end(content);
             });
@@ -603,18 +620,36 @@ const server = http.createServer(async (req, res) => {
     }
 });
 
+console.log(`Value of PORT variable is: ${PORT}`);
+console.log("Attempting to start HTTP server...");
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Admin panel is now listening on port ${PORT}`);
-    console.log(`Admin panel available at http://localhost:${PORT}`);
-    console.log(`Bot is attempting to log in...`);
+    console.log(`✅ Admin panel is now listening on port ${PORT}`);
+    console.log(`Admin panel available at http://localhost:${PORT} (and your Render URL)`);
+    console.log(`Bot is attempting to log in to Discord...`);
 });
 
+server.on('error', (error) => {
+    console.error('HTTP Server Error:', error);
+    if (error.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use. Please ensure no other application is using this port or change the PORT environment variable.`);
+    }
+    process.exit(1); // Exit if server can't start
+});
+
+
 client.login(process.env.DISCORD_TOKEN)
-    .then(() => console.log('Discord client login successful.'))
-    .catch(err => console.error('Discord client login failed:', err));
+    .then(() => {
+        console.log('Discord client login successful.');
+    })
+    .catch(err => {
+        console.error('Discord client login failed:', err);
+        console.error('Please check your DISCORD_TOKEN environment variable.');
+        // Optionally, you might want to exit or prevent the HTTP server from staying up if Discord login is critical
+        // For now, the HTTP server will remain running.
+    });
 
 process.on('SIGINT', () => {
-    console.log('Shutting down server...');
+    console.log('Shutting down server (SIGINT)...');
     server.close(() => {
         console.log('HTTP server closed.');
         client.destroy();
@@ -623,3 +658,21 @@ process.on('SIGINT', () => {
     });
 });
 
+process.on('SIGTERM', () => {
+    console.log('Shutting down server (SIGTERM)...');
+    server.close(() => {
+        console.log('HTTP server closed.');
+        client.destroy();
+        console.log('Discord client destroyed.');
+        process.exit(0);
+    });
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    process.exit(1); // Mandatory exit after uncaught exception
+});
