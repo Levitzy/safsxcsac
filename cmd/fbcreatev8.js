@@ -1252,7 +1252,7 @@ module.exports = {
             }
 
             const results = await Promise.allSettled(accountCreationPromises);
-            let successCount = 0;
+            let successCount = 0;f
             let failureCount = 0;
 
             results.forEach(result => {
