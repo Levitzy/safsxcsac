@@ -23,9 +23,27 @@ const DEFAULT_ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'AdminJubiar';
 const ADMIN_TOKENS = new Set([DEFAULT_ADMIN_TOKEN]);
 const SESSION_TOKENS = new Map(); // Map to store valid session tokens
 
+<<<<<<< HEAD
 // Runtime state
 let setup = require('./setup.json');
 let PREFIX = typeof setup.PREFIX === 'string' ? setup.PREFIX : '';
+=======
+let setup = {};
+try {
+    const setupPath = path.join(__dirname, 'setup.json'); 
+    if (fs.existsSync(setupPath)) {
+        setup = require(setupPath);
+    } else {
+        console.warn("[WARN] setup.json not found. Using default prefix (empty string for prefixless).");
+        setup.PREFIX = '';
+    }
+} catch (e) {
+    console.warn("[WARN] setup.json is invalid or unreadable. Using default prefix (empty string for prefixless). Error:", e.message);
+    setup.PREFIX = '';
+}
+let PREFIX = typeof setup.PREFIX === 'string' ? setup.PREFIX.trim() : ''; 
+
+>>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
 let ADMIN_PERMISSIONS = {};
 let systemStats = {
   commandsExecuted: 0,
@@ -303,6 +321,7 @@ client.on(Events.MessageCreate, async (message) => {
     // Track active users
     systemStats.activeUsers.add(message.author.id);
 
+<<<<<<< HEAD
     const raw = message.content.trim();
     let args, commandName;
     if (PREFIX && raw.startsWith(PREFIX)) {
@@ -310,15 +329,42 @@ client.on(Events.MessageCreate, async (message) => {
         commandName = args.shift().toLowerCase();
     } else if (!PREFIX) {
         args = raw.split(/ +/);
+=======
+    const rawContent = message.content.trim();
+    let args;
+    let commandName;
+
+    if (PREFIX && rawContent.toLowerCase().startsWith(PREFIX.toLowerCase())) {
+        args = rawContent.slice(PREFIX.length).trim().split(/ +/);
+>>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
         commandName = args.shift().toLowerCase();
+    } 
+    else if (!PREFIX || (PREFIX && !rawContent.toLowerCase().startsWith(PREFIX.toLowerCase()))) {
+        const potentialCommandParts = rawContent.split(/ +/);
+        const potentialCommandName = potentialCommandParts[0].toLowerCase();
+
+        if (client.commands.has(potentialCommandName)) {
+            commandName = potentialCommandName;
+            args = potentialCommandParts.slice(1);
+        } else {
+            return;
+        }
     } else {
         return;
     }
 
-    const command = client.commands.get(commandName);
+    const command = client.commands.get(commandName) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
+    
     if (!command) return;
 
+<<<<<<< HEAD
     // Permission check
+=======
+    if (command.guildOnly && !message.guild) {
+        return message.reply('ℹ️ This command can only be used inside a server.');
+    }
+
+>>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
     if (command.admin_only && !hasAdminPermission(message.author.id, command.name)) {
         return message.reply('❌ You do not have permission to use this specific command.');
     }
@@ -338,6 +384,7 @@ client.on(Events.MessageCreate, async (message) => {
     }
 });
 
+
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isButton()) {
         await handleButtonInteraction(interaction);
@@ -351,8 +398,13 @@ try {
     if (fs.existsSync(adminPanelPath)) {
         adminPanelHTML = fs.readFileSync(adminPanelPath, 'utf8');
     } else {
+<<<<<<< HEAD
         adminPanelHTML = `<!DOCTYPE html><html><head><title>Admin Panel</title></head><body><h1>Admin Panel Not Found</h1><p>Please create index.html.</p></body></html>`;
         fs.writeFileSync(adminPanelPath, adminPanelHTML);
+=======
+        adminPanelHTML = `<!DOCTYPE html><html><head><title>Admin Panel</title></head><body><h1>Admin Panel Not Found</h1><p>Please create index.html in the root directory.</p></body></html>`;
+        console.warn('Admin panel index.html not found. Serving placeholder. Please create index.html.');
+>>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
     }
 } catch (error) {
     console.error('Error reading/creating admin panel HTML:', error);
@@ -422,7 +474,11 @@ try {
     </script>
 </body>
 </html>`;
+<<<<<<< HEAD
         fs.writeFileSync(loginPath, loginHTML);
+=======
+        console.warn('Admin panel login.html not found. Serving placeholder. Please create login.html.');
+>>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
     }
 } catch (error) {
     console.error('Error reading/creating login HTML:', error);
@@ -463,6 +519,7 @@ const server = http.createServer(async (req, res) => {
             const token = authHeader.substring(7);
             isAuthenticated = validateSessionToken(token);
         }
+<<<<<<< HEAD
         
         // Check URL token
         if (!isAuthenticated && urlToken) {
@@ -479,6 +536,17 @@ const server = http.createServer(async (req, res) => {
         if (!isAuthenticated && pathname === '/') {
             res.writeHead(302, { 'Location': '/login.html' });
             res.end();
+=======
+
+        if (!validateSessionToken(sessionToken)) {
+            if (isApiEndpoint) {
+                res.writeHead(401, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Unauthorized', message: 'Valid session token required.' }));
+            } else { 
+                res.writeHead(302, { 'Location': '/login.html' });
+                res.end();
+            }
+>>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
             return;
         }
     }
@@ -597,7 +665,11 @@ const server = http.createServer(async (req, res) => {
                 const validatedPerms = {};
                 for (const userId in newAdminPermsObject) {
                     if (/^\d{17,19}$/.test(userId) && Array.isArray(newAdminPermsObject[userId])) {
+<<<<<<< HEAD
                         validatedPerms[userId] = newAdminPermsObject[userId].map(String).filter(cmd => cmd.length > 0);
+=======
+                        validatedPerms[userId] = newAdminPermsObject[userId].map(String).filter(cmd => cmd.length > 0 && cmd.length < 50);
+>>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
                     } else {
                         console.warn(`Invalid entry for user ID ${userId} in admin permissions update.`);
                     }
@@ -672,10 +744,30 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`Bot is attempting to log in...`);
 });
 
+<<<<<<< HEAD
 // Login Discord client
 client.login(process.env.DISCORD_TOKEN)
     .then(() => console.log('Discord client login successful.'))
     .catch(err => console.error('Discord client login failed:', err));
+=======
+server.on('error', (error) => {
+    console.error('HTTP Server Error:', error);
+    if (error.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use. Please ensure no other application is using this port or change the PORT environment variable.`);
+    }
+    process.exit(1);
+});
+
+
+client.login(process.env.DISCORD_TOKEN)
+    .then(() => {
+        console.log('Discord client login successful.');
+    })
+    .catch(err => {
+        console.error('Discord client login failed:', err);
+        console.error('Please check your DISCORD_TOKEN environment variable.');
+    });
+>>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
 
 // Cleanup on exit
 process.on('SIGINT', () => {
@@ -686,4 +778,27 @@ process.on('SIGINT', () => {
         console.log('Discord client destroyed.');
         process.exit(0);
     });
+<<<<<<< HEAD
 });
+=======
+});
+
+process.on('SIGTERM', () => {
+    console.log('Shutting down server (SIGTERM)...');
+    server.close(() => {
+        console.log('HTTP server closed.');
+        client.destroy();
+        console.log('Discord client destroyed.');
+        process.exit(0);
+    });
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    process.exit(1);
+});
+>>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe

@@ -1,3 +1,8 @@
 node_modules/
+<<<<<<< HEAD
 .env
 admin_ids.json
+=======
+admin_ids.json
+.env    
+>>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
