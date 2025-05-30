@@ -23,11 +23,6 @@ const DEFAULT_ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'AdminJubiar';
 const ADMIN_TOKENS = new Set([DEFAULT_ADMIN_TOKEN]);
 const SESSION_TOKENS = new Map(); // Map to store valid session tokens
 
-<<<<<<< HEAD
-// Runtime state
-let setup = require('./setup.json');
-let PREFIX = typeof setup.PREFIX === 'string' ? setup.PREFIX : '';
-=======
 let setup = {};
 try {
     const setupPath = path.join(__dirname, 'setup.json'); 
@@ -43,7 +38,6 @@ try {
 }
 let PREFIX = typeof setup.PREFIX === 'string' ? setup.PREFIX.trim() : ''; 
 
->>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
 let ADMIN_PERMISSIONS = {};
 let systemStats = {
   commandsExecuted: 0,
@@ -321,22 +315,12 @@ client.on(Events.MessageCreate, async (message) => {
     // Track active users
     systemStats.activeUsers.add(message.author.id);
 
-<<<<<<< HEAD
-    const raw = message.content.trim();
-    let args, commandName;
-    if (PREFIX && raw.startsWith(PREFIX)) {
-        args = raw.slice(PREFIX.length).trim().split(/ +/);
-        commandName = args.shift().toLowerCase();
-    } else if (!PREFIX) {
-        args = raw.split(/ +/);
-=======
     const rawContent = message.content.trim();
     let args;
     let commandName;
 
     if (PREFIX && rawContent.toLowerCase().startsWith(PREFIX.toLowerCase())) {
         args = rawContent.slice(PREFIX.length).trim().split(/ +/);
->>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
         commandName = args.shift().toLowerCase();
     } 
     else if (!PREFIX || (PREFIX && !rawContent.toLowerCase().startsWith(PREFIX.toLowerCase()))) {
