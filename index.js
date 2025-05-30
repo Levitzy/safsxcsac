@@ -341,14 +341,10 @@ client.on(Events.MessageCreate, async (message) => {
     
     if (!command) return;
 
-<<<<<<< HEAD
-    // Permission check
-=======
     if (command.guildOnly && !message.guild) {
         return message.reply('ℹ️ This command can only be used inside a server.');
     }
 
->>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
     if (command.admin_only && !hasAdminPermission(message.author.id, command.name)) {
         return message.reply('❌ You do not have permission to use this specific command.');
     }
@@ -382,13 +378,8 @@ try {
     if (fs.existsSync(adminPanelPath)) {
         adminPanelHTML = fs.readFileSync(adminPanelPath, 'utf8');
     } else {
-<<<<<<< HEAD
-        adminPanelHTML = `<!DOCTYPE html><html><head><title>Admin Panel</title></head><body><h1>Admin Panel Not Found</h1><p>Please create index.html.</p></body></html>`;
-        fs.writeFileSync(adminPanelPath, adminPanelHTML);
-=======
         adminPanelHTML = `<!DOCTYPE html><html><head><title>Admin Panel</title></head><body><h1>Admin Panel Not Found</h1><p>Please create index.html in the root directory.</p></body></html>`;
         console.warn('Admin panel index.html not found. Serving placeholder. Please create index.html.');
->>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
     }
 } catch (error) {
     console.error('Error reading/creating admin panel HTML:', error);
@@ -458,11 +449,7 @@ try {
     </script>
 </body>
 </html>`;
-<<<<<<< HEAD
-        fs.writeFileSync(loginPath, loginHTML);
-=======
         console.warn('Admin panel login.html not found. Serving placeholder. Please create login.html.');
->>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
     }
 } catch (error) {
     console.error('Error reading/creating login HTML:', error);
@@ -503,24 +490,6 @@ const server = http.createServer(async (req, res) => {
             const token = authHeader.substring(7);
             isAuthenticated = validateSessionToken(token);
         }
-<<<<<<< HEAD
-        
-        // Check URL token
-        if (!isAuthenticated && urlToken) {
-            isAuthenticated = validateSessionToken(urlToken);
-        }
-        
-        if (!isAuthenticated && pathname !== '/') {
-            res.writeHead(401, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Unauthorized', message: 'Authentication required' }));
-            return;
-        }
-        
-        // Redirect to login if accessing main page without auth
-        if (!isAuthenticated && pathname === '/') {
-            res.writeHead(302, { 'Location': '/login.html' });
-            res.end();
-=======
 
         if (!validateSessionToken(sessionToken)) {
             if (isApiEndpoint) {
@@ -530,7 +499,6 @@ const server = http.createServer(async (req, res) => {
                 res.writeHead(302, { 'Location': '/login.html' });
                 res.end();
             }
->>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
             return;
         }
     }
@@ -649,11 +617,7 @@ const server = http.createServer(async (req, res) => {
                 const validatedPerms = {};
                 for (const userId in newAdminPermsObject) {
                     if (/^\d{17,19}$/.test(userId) && Array.isArray(newAdminPermsObject[userId])) {
-<<<<<<< HEAD
-                        validatedPerms[userId] = newAdminPermsObject[userId].map(String).filter(cmd => cmd.length > 0);
-=======
                         validatedPerms[userId] = newAdminPermsObject[userId].map(String).filter(cmd => cmd.length > 0 && cmd.length < 50);
->>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
                     } else {
                         console.warn(`Invalid entry for user ID ${userId} in admin permissions update.`);
                     }
@@ -728,12 +692,6 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`Bot is attempting to log in...`);
 });
 
-<<<<<<< HEAD
-// Login Discord client
-client.login(process.env.DISCORD_TOKEN)
-    .then(() => console.log('Discord client login successful.'))
-    .catch(err => console.error('Discord client login failed:', err));
-=======
 server.on('error', (error) => {
     console.error('HTTP Server Error:', error);
     if (error.code === 'EADDRINUSE') {
@@ -751,7 +709,6 @@ client.login(process.env.DISCORD_TOKEN)
         console.error('Discord client login failed:', err);
         console.error('Please check your DISCORD_TOKEN environment variable.');
     });
->>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
 
 // Cleanup on exit
 process.on('SIGINT', () => {
@@ -762,9 +719,6 @@ process.on('SIGINT', () => {
         console.log('Discord client destroyed.');
         process.exit(0);
     });
-<<<<<<< HEAD
-});
-=======
 });
 
 process.on('SIGTERM', () => {
@@ -785,4 +739,3 @@ process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
     process.exit(1);
 });
->>>>>>> 8db4e2b160b4824421d5d7a64017713d7ed809fe
